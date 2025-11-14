@@ -1,454 +1,391 @@
 <!doctype html>
 <html lang="es">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Realtime Board - Demo</title>
-    <style>
-        :root {
-            --bg: #f5f7fb;
-            --card: #fff;
-            --accent: #667eea
-        }
-
-        * {
-            box-sizing: border-box
-        }
-
-        body {
-            font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto;
-            background: var(--bg);
-            margin: 0;
-            padding: 28px;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 18px;
-        }
-
-        h1 {
-            font-size: 20px;
-            color: #111;
-            margin: 0
-        }
-
-        .controls {
-            margin-left: auto;
-            display: flex;
-            gap: 8px;
-            align-items: center
-        }
-
-        button {
-            background: var(--accent);
-            color: #fff;
-            border: 0;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer
-        }
-
-        .small-btn {
-            background: #fff;
-            color: #333;
-            border: 1px solid #ddd;
-            padding: 6px 8px
-        }
-
-        .board-wrap {
-            overflow: auto;
-            padding: 12px;
-            border-radius: 12px
-        }
-
-        .board {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
-            padding: 18px;
-            min-height: 220px;
-            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(20, 30, 60, 0.05);
-            transition: background .15s;
-        }
-
-        .card {
-            width: 260px;
-            min-height: 140px;
-            background: var(--card);
-            border-radius: 12px;
-            padding: 14px;
-            box-shadow: 0 6px 18px rgba(20, 30, 60, 0.06);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            user-select: text;
-            cursor: grab;
-        }
-
-        .card.dragging {
-            opacity: .6;
-            transform: scale(.98)
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center
-        }
-
-        .card-title {
-            font-weight: 600;
-            color: #333;
-            font-size: 14px
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 8px
-        }
-
-        .card-content {
-            flex: 1;
-            font-size: 14px;
-            color: #222;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            min-height: 70px;
-            outline: none;
-            overflow: auto;
-        }
-
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px
-        }
-
-        .muted {
-            color: #777;
-            font-size: 12px
-        }
-
-        .empty {
-            color: #999;
-            padding: 40px;
-            text-align: center;
-            width: 100%
-        }
-
-        /* responsive */
-        @media (max-width:700px) {
-            .board {
-                padding: 12px;
-                gap: 10px
-            }
-
-            .card {
-                width: 220px
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Realtime Board — Demo</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--accent:#667eea}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto; background:var(--bg); margin:0; padding:28px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{font-size:20px;color:#111;margin:0}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    button{background:var(--accent);color:#000000;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .small-btn{background:#fff;color:#333;border:1px solid #ddd;padding:6px 8px}
+    .board-wrap{overflow:auto;padding:12px;border-radius:12px}
+    .board{display:flex;gap:14px;align-items:flex-start;padding:18px;min-height:220px;background:linear-gradient(180deg,#ffffff 0%, #fbfcfe 100%);border-radius:12px;box-shadow:0 4px 20px rgba(20,30,60,0.05);transition:background .15s}
+    .card{width:260px;min-height:160px;background:var(--card);border-radius:12px;padding:12px 12px 14px;box-shadow:0 6px 18px rgba(20,30,60,0.06);display:flex;flex-direction:column;gap:8px;user-select:text;cursor:grab}
+    .card.dragging{opacity:.6;transform:scale(.98)}
+    .card-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .card-left{display:flex;align-items:center;gap:8px}
+    .card-number{background:#eef2ff;color:#334155;padding:6px 8px;border-radius:8px;font-weight:700;font-size:13px}
+    .card-title{font-weight:600;color:#333;font-size:14px;min-width:0;outline:none;border:none;background:transparent}
+    .card-title[contenteditable="true"]:focus{box-shadow:0 0 0 2px rgba(102,126,234,0.15);border-radius:6px}
+    .card-actions{display:flex;gap:8px}
+    .card-content{flex:1;font-size:14px;color:#222;padding:8px;border-radius:8px;border:1px solid #eee;min-height:70px;outline:none;overflow:auto}
+    .card-extra{font-size:13px;color:#333;padding:8px;border-radius:8px;border:1px solid #eee;min-height:40px;outline:none;overflow:auto}
+    .card-footer{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .muted{color:#777;font-size:12px}
+    .empty{color:#999;padding:40px;text-align:center;width:100%}
+    .small-icon-btn{background:#fff;border:1px solid #eee;padding:6px 8px;border-radius:8px;cursor:pointer}
+    @media (max-width:700px){.board{padding:12px;gap:10px}.card{width:220px}}
+  </style>
 </head>
-
 <body>
-    <header>
-        <h1>Realtime Board — Demo</h1>
-        <div class="controls">
-            <button id="addCardBtn">➕ Agregar card</button>
-            <button id="clearAllBtn" class="small-btn">🗑 Borrar todo</button>
-        </div>
-    </header>
-
-    <div class="board-wrap">
-        <div id="board" class="board" aria-live="polite">
-            <!-- cards se inyectan aquí -->
-        </div>
-        <div id="emptyMsg" class="empty" style="display:none">No hay cards. Crea la primera con "Agregar card".</div>
+  <header>
+    <h1>Realtime Board — Demo</h1>
+    <div class="controls">
+      <button id="addCardBtn">➕ Agregar card</button>
+      <button id="clearAllBtn" class="small-btn">🗑 Borrar todo</button>
     </div>
+  </header>
 
-    <!-- Firebase: usa la versión que prefieras; aquí usamos la compat CDN para simplicidad -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <div class="board-wrap">
+    <div id="board" class="board" aria-live="polite"></div>
+    <div id="emptyMsg" class="empty" style="display:none">No hay cards. Crea la primera con "Agregar card".</div>
+  </div>
 
-    <script>
-        /***********************
-         * CONFIGURA AQUÍ tu Firebase
-         * - Crea un proyecto Firebase y copia/pega tu firebaseConfig abajo.
-         ***********************/
-        const firebaseConfig = {
-            apiKey: "AIzaSyBkpcGEZ31B59cS_2HmVPWwBFNGrTq8EdY",
-            authDomain: "pruebacards-aa8b8.firebaseapp.com",
-            projectId: "pruebacards-aa8b8",
-            storageBucket: "pruebacards-aa8b8.firebasestorage.app",
-            messagingSenderId: "919397052566",
-            appId: "1:919397052566:web:3e8722f2256bc365c6d2b7",
-            measurementId: "G-YYRL2WEE67"
-        };
+  <!-- Firebase compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-        // Inicializa Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+  <script>
+  /***********************
+   * CONFIGURA AQUÍ tu Firebase
+   ***********************/
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkpcGEZ31B59cS_2HmVPWwBFNGrTq8EdY",
+    authDomain: "pruebacards-aa8b8.firebaseapp.com",
+    projectId: "pruebacards-aa8b8",
+    storageBucket: "pruebacards-aa8b8.appspot.com",
+    messagingSenderId: "919397052566",
+    appId: "1:919397052566:web:3e8722f2256bc365c6d2b7",
+    measurementId: "G-YYRL2WEE67"
+  };
 
-        /***********************
-         * Utilidades y variables
-         ***********************/
-        const boardEl = document.getElementById('board');
-        const addCardBtn = document.getElementById('addCardBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const emptyMsg = document.getElementById('emptyMsg');
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-        // Debounce helper
-        function debounce(fn, wait = 500) {
-            let t;
-            return (...args) => {
-                clearTimeout(t);
-                t = setTimeout(() => fn(...args), wait);
-            };
-        }
+  /***********************
+   * Variables y util
+   ***********************/
+  const boardEl = document.getElementById('board');
+  const addCardBtn = document.getElementById('addCardBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const emptyMsg = document.getElementById('emptyMsg');
 
-        /***********************
-         * Render card (DOM)
-         ***********************/
-        function createCardNode(cardDoc) {
-            const data = cardDoc.data();
-            const id = cardDoc.id;
+  // Debounce factory: default 2500ms
+  function debounce(fn, wait = 2500) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
+    };
+  }
 
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.draggable = true;
-            el.dataset.id = id;
+  /***********************
+   * Create card DOM node
+   ***********************/
+  function createCardNode(cardDoc, indexForNumbering) {
+    const data = cardDoc.data();
+    const id = cardDoc.id;
 
-            el.innerHTML = `
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.draggable = true;
+    el.dataset.id = id;
+
+    // Build inner structure safely (we'll set textContent for editable fields)
+    el.innerHTML = `
       <div class="card-header">
-        <div class="card-title">Card</div>
+        <div class="card-left">
+          <div class="card-number">#${indexForNumbering}</div>
+          <div class="card-title" contenteditable="true" aria-label="Editar título"></div>
+        </div>
         <div class="card-actions">
-          <button class="small-btn btn-delete" title="Borrar">✖</button>
+          <button class="small-icon-btn btn-delete" title="Borrar">✖</button>
         </div>
       </div>
-      <div class="card-content" contenteditable="true" data-id="${id}" aria-label="Editar contenido">${escapeHtml(data.text || '')}</div>
+
+      <div class="card-content" contenteditable="true" aria-label="Editar contenido principal"></div>
+
+      <div class="card-extra" contenteditable="true" aria-label="Editar contenido adicional (extra)"></div>
+
       <div class="card-footer">
-        <div class="muted">Última: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-'}</div>
-        <div class="muted">Pos: ${data.position}</div>
+        <div class="muted updated-at">Última: -</div>
+        <div class="muted pos-display">Pos: -</div>
       </div>
     `;
 
-            // Drag events
-            el.addEventListener('dragstart', (e) => {
-                el.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', id);
-                // opcional: set drag image
-            });
-            el.addEventListener('dragend', () => {
-                el.classList.remove('dragging');
-            });
+    // References
+    const titleEl = el.querySelector('.card-title');
+    const mainEl = el.querySelector('.card-content');
+    const extraEl = el.querySelector('.card-extra');
+    const updatedAtEl = el.querySelector('.updated-at');
+    const posDisplayEl = el.querySelector('.pos-display');
 
-            // Delete
-            el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
-                ev.stopPropagation();
-                if (!confirm('Borrar esta card?')) return;
-                await db.collection('cards').doc(id).delete();
-            });
+    // Populate initial values safely
+    titleEl.textContent = data.title || '';
+    mainEl.textContent = data.text || '';
+    extraEl.textContent = data.extra || '';
+    updatedAtEl.textContent = `Última: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-'}`;
+    posDisplayEl.textContent = `Pos: ${data.position ?? '-'}`;
 
-            // Content editable -> update firestore (debounced)
-            const contentEl = el.querySelector('.card-content');
-            const debouncedSave = debounce(async (newText) => {
-                try {
-                    await db.collection('cards').doc(id).update({
-                        text: newText,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                } catch (err) {
-                    console.error('save error', err);
-                }
-            }, 600);
+    /***** Drag events *****/
+    el.addEventListener('dragstart', (e) => {
+      el.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', id);
+      // optional: e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+    });
 
-            // input handler
-            contentEl.addEventListener('input', (e) => {
-                debouncedSave(e.target.innerText);
-            });
+    /***** Delete *****/
+    el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if (!confirm('Borrar esta card?')) return;
+      try {
+        await db.collection('cards').doc(id).delete();
+      } catch (err) {
+        console.error('delete err', err);
+      }
+    });
 
-            // stop drag when clicking inside editable
-            contentEl.addEventListener('mousedown', (e) => e.stopPropagation());
-
-            return el;
-        }
-
-        /***********************
-         * Drag & Drop between cards (reordering)
-         * Strategy: on drop, compute new position as average between neighbors.
-         ***********************/
-        boardEl.addEventListener('dragover', e => {
-            e.preventDefault();
-            const draggingId = e.dataTransfer.getData('text/plain');
-            const afterEl = getDragAfterElement(boardEl, e.clientX);
-            const draggingEl = boardEl.querySelector(`[data-id="${draggingId}"]`);
-            if (!draggingEl) return;
-
-            if (afterEl == null) {
-                boardEl.appendChild(draggingEl);
-            } else {
-                boardEl.insertBefore(draggingEl, afterEl);
-            }
+    /***** Save handlers (debounced) *****/
+    // All saves update their specific field and updatedAt (serverTimestamp)
+    const saveTitle = debounce(async (value) => {
+      try {
+        await db.collection('cards').doc(id).update({
+          title: value,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+      } catch (err) { console.error('save title err', err); }
+    }, 2500);
 
-        boardEl.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text/plain');
-            // compute new position using adjacent nodes
-            const node = boardEl.querySelector(`[data-id="${id}"]`);
-            if (!node) return;
-
-            const nodes = Array.from(boardEl.children);
-            const idx = nodes.indexOf(node);
-            let newPos;
-            if (idx === 0) {
-                // first -> position smaller than next
-                const next = await getCardData(nodes[1]);
-                newPos = next ? next.position - 1000 : Date.now();
-            } else if (idx === nodes.length - 1) {
-                // last -> larger than prev
-                const prev = await getCardData(nodes[idx - 1]);
-                newPos = prev ? prev.position + 1000 : Date.now();
-            } else {
-                const prev = await getCardData(nodes[idx - 1]);
-                const next = await getCardData(nodes[idx + 1]);
-                newPos = ((prev.position || 0) + (next.position || 0)) / 2;
-            }
-
-            // save new position
-            if (newPos) {
-                await db.collection('cards').doc(id).update({
-                    position: newPos,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
+    const saveMain = debounce(async (value) => {
+      try {
+        await db.collection('cards').doc(id).update({
+          text: value,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+      } catch (err) { console.error('save main err', err); }
+    }, 2500);
 
-        // ayuda para dragover: devuelve el element después del cursor X
-        function getDragAfterElement(container, x) {
-            const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
-
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = x - box.left - box.width / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        // lee data desde el DOM node (usa dataset id)
-        async function getCardData(node) {
-            if (!node) return null;
-            try {
-                const doc = await db.collection('cards').doc(node.dataset.id).get();
-                return doc.exists ? doc.data() : null;
-            } catch (e) {
-                console.error('getCardData err', e);
-                return null;
-            }
-        }
-
-        /***********************
-         * Sync real-time: escuchamos la colección 'cards'
-         ***********************/
-        let unsubscribe = null;
-        function startRealtime() {
-            unsubscribe = db.collection('cards').orderBy('position', 'asc').onSnapshot(snapshot => {
-                // Render: mantener nodos existentes en orden para evitar perder foco de edición
-                const docs = snapshot.docs;
-                if (docs.length === 0) {
-                    boardEl.innerHTML = '';
-                    emptyMsg.style.display = 'block';
-                    return;
-                } else emptyMsg.style.display = 'none';
-
-                // Map current DOM nodes by id
-                const existingMap = {};
-                Array.from(boardEl.children).forEach(node => { existingMap[node.dataset.id] = node; });
-
-                // Build new order
-                const fragment = document.createDocumentFragment();
-                docs.forEach(doc => {
-                    const id = doc.id;
-                    if (existingMap[id]) {
-                        // reuse node (update footer time & content only if not editing)
-                        const node = existingMap[id];
-                        // update footer timestamp & position
-                        const footerTime = node.querySelector('.card-footer .muted');
-                        if (footerTime) {
-                            const dt = doc.data().updatedAt ? new Date(doc.data().updatedAt.seconds * 1000).toLocaleString() : '-';
-                            footerTime.innerText = `Última: ${dt}`;
-                        }
-                        // update content only if element not focused
-                        const contentEl = node.querySelector('.card-content');
-                        if (document.activeElement !== contentEl) {
-                            const text = doc.data().text || '';
-                            if (contentEl.innerText !== text) contentEl.innerText = text;
-                        }
-                        fragment.appendChild(node);
-                    } else {
-                        // create a new node
-                        fragment.appendChild(createCardNode(doc));
-                    }
-                });
-
-                // Replace board children with fragment (efficient)
-                boardEl.innerHTML = '';
-                boardEl.appendChild(fragment);
-            }, err => {
-                console.error('onSnapshot error', err);
-                // podrías reconectar o mostrar error
-            });
-        }
-
-        startRealtime();
-
-        /***********************
-         * Botones: agregar, limpiar
-         ***********************/
-        addCardBtn.addEventListener('click', async () => {
-            const now = Date.now();
-            const newCard = {
-                text: 'Nueva card — edítame',
-                position: now, // por defecto al final
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            try {
-                await db.collection('cards').add(newCard);
-            } catch (e) { console.error('add err', e) }
+    const saveExtra = debounce(async (value) => {
+      try {
+        await db.collection('cards').doc(id).update({
+          extra: value,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+      } catch (err) { console.error('save extra err', err); }
+    }, 2500);
 
-        clearAllBtn.addEventListener('click', async () => {
-            if (!confirm('Borrar todas las cards?')) return;
-            try {
-                const snapshot = await db.collection('cards').get();
-                const batch = db.batch();
-                snapshot.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-            } catch (e) { console.error('clear err', e) }
+    // Input listeners
+    titleEl.addEventListener('input', (e) => {
+      saveTitle(e.target.innerText.trim());
+    });
+    mainEl.addEventListener('input', (e) => {
+      saveMain(e.target.innerText);
+    });
+    extraEl.addEventListener('input', (e) => {
+      saveExtra(e.target.innerText);
+    });
+
+    // prevent starting drag when interacting with editable areas
+    [titleEl, mainEl, extraEl].forEach(node => {
+      node.addEventListener('mousedown', (e) => e.stopPropagation());
+    });
+
+    return el;
+  }
+
+  /***********************
+   * Drag & Drop reordering (visual during drag)
+   ***********************/
+  boardEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    const draggingId = e.dataTransfer.getData('text/plain');
+    const afterEl = getDragAfterElement(boardEl, e.clientX);
+    const draggingEl = boardEl.querySelector(`[data-id="${draggingId}"]`);
+    if (!draggingEl) return;
+
+    if (afterEl == null) {
+      boardEl.appendChild(draggingEl);
+    } else {
+      boardEl.insertBefore(draggingEl, afterEl);
+    }
+  });
+
+  boardEl.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const node = boardEl.querySelector(`[data-id="${id}"]`);
+    if (!node) return;
+
+    const nodes = Array.from(boardEl.children);
+    const idx = nodes.indexOf(node);
+    let newPos;
+    if (idx === 0) {
+      const next = await getCardData(nodes[1]);
+      newPos = next ? next.position - 1000 : Date.now();
+    } else if (idx === nodes.length - 1) {
+      const prev = await getCardData(nodes[idx - 1]);
+      newPos = prev ? prev.position + 1000 : Date.now();
+    } else {
+      const prev = await getCardData(nodes[idx - 1]);
+      const next = await getCardData(nodes[idx + 1]);
+      newPos = ((prev.position || 0) + (next.position || 0)) / 2;
+    }
+
+    if (newPos) {
+      try {
+        await db.collection('cards').doc(id).update({
+          position: newPos,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+      } catch (err) {
+        console.error('update pos err', err);
+      }
+    }
+  });
 
-        /***********************
-         * Helpers
-         ***********************/
-        function escapeHtml(str) {
-            // mantenemos saltos simples en innerText; evitamos XSS incluído en contenido editable.
-            if (!str) return '';
-            return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // get element after cursor X
+  function getDragAfterElement(container, x) {
+    const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+    const closest = draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = x - box.left - box.width / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY, element: null });
+    return closest.element;
+  }
+
+  // fetch single card doc data
+  async function getCardData(node) {
+    if (!node) return null;
+    try {
+      const doc = await db.collection('cards').doc(node.dataset.id).get();
+      return doc.exists ? doc.data() : null;
+    } catch (e) {
+      console.error('getCardData err', e);
+      return null;
+    }
+  }
+
+  /***********************
+   * Real-time sync (onSnapshot)
+   ***********************/
+  function startRealtime() {
+    db.collection('cards').orderBy('position', 'asc').onSnapshot(snapshot => {
+      const docs = snapshot.docs;
+      if (docs.length === 0) {
+        boardEl.innerHTML = '';
+        emptyMsg.style.display = 'block';
+        return;
+      } else emptyMsg.style.display = 'none';
+
+      // Map current nodes by id (to reuse DOM nodes and preserve focus)
+      const existingMap = {};
+      Array.from(boardEl.children).forEach(node => { existingMap[node.dataset.id] = node; });
+
+      const fragment = document.createDocumentFragment();
+
+      // Build nodes in the order of docs and also add numbering based on index
+      docs.forEach((doc, idx) => {
+        const id = doc.id;
+        if (existingMap[id]) {
+          // reuse node and update dynamic parts (timestamp, pos, content if not focused)
+          const node = existingMap[id];
+
+          // update number badge
+          const numEl = node.querySelector('.card-number');
+          if (numEl) numEl.textContent = `#${idx + 1}`;
+
+          // update footer
+          const footerTime = node.querySelector('.updated-at');
+          if (footerTime) {
+            const dt = doc.data().updatedAt ? new Date(doc.data().updatedAt.seconds * 1000).toLocaleString() : '-';
+            footerTime.innerText = `Última: ${dt}`;
+          }
+          const posEl = node.querySelector('.pos-display');
+          if (posEl) posEl.innerText = `Pos: ${doc.data().position ?? '-'}`;
+
+          // update editable fields only if not focused
+          const titleEl = node.querySelector('.card-title');
+          const mainEl = node.querySelector('.card-content');
+          const extraEl = node.querySelector('.card-extra');
+
+          if (document.activeElement !== titleEl) {
+            const titleVal = doc.data().title || '';
+            if (titleEl.innerText !== titleVal) titleEl.innerText = titleVal;
+          }
+          if (document.activeElement !== mainEl) {
+            const mainVal = doc.data().text || '';
+            if (mainEl.innerText !== mainVal) mainEl.innerText = mainVal;
+          }
+          if (document.activeElement !== extraEl) {
+            const extraVal = doc.data().extra || '';
+            if (extraEl.innerText !== extraVal) extraEl.innerText = extraVal;
+          }
+
+          fragment.appendChild(node);
+        } else {
+          // create new node (pass idx+1 for numbering)
+          fragment.appendChild(createCardNode(doc, idx + 1));
         }
+      });
 
-    </script>
+      // Replace board with new fragment (keeps reused nodes)
+      boardEl.innerHTML = '';
+      boardEl.appendChild(fragment);
+    }, err => {
+      console.error('onSnapshot error', err);
+    });
+  }
+
+  startRealtime();
+
+  /***********************
+   * Buttons: add & clear
+   ***********************/
+  addCardBtn.addEventListener('click', async () => {
+    const now = Date.now();
+    const newCard = {
+      title: '',               // editable title
+      text: 'Nueva card — edítame', // main text
+      extra: '',               // nuevo cajón extra
+      position: now,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    try {
+      await db.collection('cards').add(newCard);
+    } catch (e) { console.error('add err', e); }
+  });
+
+  clearAllBtn.addEventListener('click', async () => {
+    if (!confirm('Borrar todas las cards?')) return;
+    try {
+      const snapshot = await db.collection('cards').get();
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch (e) { console.error('clear err', e); }
+  });
+
+  /***********************
+   * Helpers
+   ***********************/
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  </script>
 </body>
-
 </html>
