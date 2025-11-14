@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Realtime Board - Demo</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #fff;
+            --accent: #667eea
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto;
+            background: var(--bg);
+            margin: 0;
+            padding: 28px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #111;
+            margin: 0
+        }
+
+        .controls {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .small-btn {
+            background: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 6px 8px
+        }
+
+        .board-wrap {
+            overflow: auto;
+            padding: 12px;
+            border-radius: 12px
+        }
+
+        .board {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 18px;
+            min-height: 220px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(20, 30, 60, 0.05);
+            transition: background .15s;
+        }
+
+        .card {
+            width: 260px;
+            min-height: 140px;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 6px 18px rgba(20, 30, 60, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            user-select: text;
+            cursor: grab;
+        }
+
+        .card.dragging {
+            opacity: .6;
+            transform: scale(.98)
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px
+        }
+
+        .card-content {
+            flex: 1;
+            font-size: 14px;
+            color: #222;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            min-height: 70px;
+            outline: none;
+            overflow: auto;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px
+        }
+
+        .muted {
+            color: #777;
+            font-size: 12px
+        }
+
+        .empty {
+            color: #999;
+            padding: 40px;
+            text-align: center;
+            width: 100%
+        }
+
+        /* responsive */
+        @media (max-width:700px) {
+            .board {
+                padding: 12px;
+                gap: 10px
+            }
+
+            .card {
+                width: 220px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Realtime Board — Demo</h1>
+        <div class="controls">
+            <button id="addCardBtn">➕ Agregar card</button>
+            <button id="clearAllBtn" class="small-btn">🗑 Borrar todo</button>
+        </div>
+    </header>
+
+    <div class="board-wrap">
+        <div id="board" class="board" aria-live="polite">
+            <!-- cards se inyectan aquí -->
+        </div>
+        <div id="emptyMsg" class="empty" style="display:none">No hay cards. Crea la primera con "Agregar card".</div>
+    </div>
+
+    <!-- Firebase: usa la versión que prefieras; aquí usamos la compat CDN para simplicidad -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+    <script>
+        /***********************
+         * CONFIGURA AQUÍ tu Firebase
+         * - Crea un proyecto Firebase y copia/pega tu firebaseConfig abajo.
+         ***********************/
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkpcGEZ31B59cS_2HmVPWwBFNGrTq8EdY",
+            authDomain: "pruebacards-aa8b8.firebaseapp.com",
+            projectId: "pruebacards-aa8b8",
+            storageBucket: "pruebacards-aa8b8.firebasestorage.app",
+            messagingSenderId: "919397052566",
+            appId: "1:919397052566:web:3e8722f2256bc365c6d2b7",
+            measurementId: "G-YYRL2WEE67"
+        };
+
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        /***********************
+         * Utilidades y variables
+         ***********************/
+        const boardEl = document.getElementById('board');
+        const addCardBtn = document.getElementById('addCardBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const emptyMsg = document.getElementById('emptyMsg');
+
+        // Debounce helper
+        function debounce(fn, wait = 500) {
+            let t;
+            return (...args) => {
+                clearTimeout(t);
+                t = setTimeout(() => fn(...args), wait);
+            };
+        }
+
+        /***********************
+         * Render card (DOM)
+         ***********************/
+        function createCardNode(cardDoc) {
+            const data = cardDoc.data();
+            const id = cardDoc.id;
+
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.draggable = true;
+            el.dataset.id = id;
+
+            el.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">Card</div>
+        <div class="card-actions">
+          <button class="small-btn btn-delete" title="Borrar">✖</button>
+        </div>
+      </div>
+      <div class="card-content" contenteditable="true" data-id="${id}" aria-label="Editar contenido">${escapeHtml(data.text || '')}</div>
+      <div class="card-footer">
+        <div class="muted">Última: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-'}</div>
+        <div class="muted">Pos: ${data.position}</div>
+      </div>
+    `;
+
+            // Drag events
+            el.addEventListener('dragstart', (e) => {
+                el.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', id);
+                // opcional: set drag image
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+
+            // Delete
+            el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                if (!confirm('Borrar esta card?')) return;
+                await db.collection('cards').doc(id).delete();
+            });
+
+            // Content editable -> update firestore (debounced)
+            const contentEl = el.querySelector('.card-content');
+            const debouncedSave = debounce(async (newText) => {
+                try {
+                    await db.collection('cards').doc(id).update({
+                        text: newText,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (err) {
+                    console.error('save error', err);
+                }
+            }, 600);
+
+            // input handler
+            contentEl.addEventListener('input', (e) => {
+                debouncedSave(e.target.innerText);
+            });
+
+            // stop drag when clicking inside editable
+            contentEl.addEventListener('mousedown', (e) => e.stopPropagation());
+
+            return el;
+        }
+
+        /***********************
+         * Drag & Drop between cards (reordering)
+         * Strategy: on drop, compute new position as average between neighbors.
+         ***********************/
+        boardEl.addEventListener('dragover', e => {
+            e.preventDefault();
+            const draggingId = e.dataTransfer.getData('text/plain');
+            const afterEl = getDragAfterElement(boardEl, e.clientX);
+            const draggingEl = boardEl.querySelector(`[data-id="${draggingId}"]`);
+            if (!draggingEl) return;
+
+            if (afterEl == null) {
+                boardEl.appendChild(draggingEl);
+            } else {
+                boardEl.insertBefore(draggingEl, afterEl);
+            }
+        });
+
+        boardEl.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            // compute new position using adjacent nodes
+            const node = boardEl.querySelector(`[data-id="${id}"]`);
+            if (!node) return;
+
+            const nodes = Array.from(boardEl.children);
+            const idx = nodes.indexOf(node);
+            let newPos;
+            if (idx === 0) {
+                // first -> position smaller than next
+                const next = await getCardData(nodes[1]);
+                newPos = next ? next.position - 1000 : Date.now();
+            } else if (idx === nodes.length - 1) {
+                // last -> larger than prev
+                const prev = await getCardData(nodes[idx - 1]);
+                newPos = prev ? prev.position + 1000 : Date.now();
+            } else {
+                const prev = await getCardData(nodes[idx - 1]);
+                const next = await getCardData(nodes[idx + 1]);
+                newPos = ((prev.position || 0) + (next.position || 0)) / 2;
+            }
+
+            // save new position
+            if (newPos) {
+                await db.collection('cards').doc(id).update({
+                    position: newPos,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        });
+
+        // ayuda para dragover: devuelve el element después del cursor X
+        function getDragAfterElement(container, x) {
+            const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = x - box.left - box.width / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // lee data desde el DOM node (usa dataset id)
+        async function getCardData(node) {
+            if (!node) return null;
+            try {
+                const doc = await db.collection('cards').doc(node.dataset.id).get();
+                return doc.exists ? doc.data() : null;
+            } catch (e) {
+                console.error('getCardData err', e);
+                return null;
+            }
+        }
+
+        /***********************
+         * Sync real-time: escuchamos la colección 'cards'
+         ***********************/
+        let unsubscribe = null;
+        function startRealtime() {
+            unsubscribe = db.collection('cards').orderBy('position', 'asc').onSnapshot(snapshot => {
+                // Render: mantener nodos existentes en orden para evitar perder foco de edición
+                const docs = snapshot.docs;
+                if (docs.length === 0) {
+                    boardEl.innerHTML = '';
+                    emptyMsg.style.display = 'block';
+                    return;
+                } else emptyMsg.style.display = 'none';
+
+                // Map current DOM nodes by id
+                const existingMap = {};
+                Array.from(boardEl.children).forEach(node => { existingMap[node.dataset.id] = node; });
+
+                // Build new order
+                const fragment = document.createDocumentFragment();
+                docs.forEach(doc => {
+                    const id = doc.id;
+                    if (existingMap[id]) {
+                        // reuse node (update footer time & content only if not editing)
+                        const node = existingMap[id];
+                        // update footer timestamp & position
+                        const footerTime = node.querySelector('.card-footer .muted');
+                        if (footerTime) {
+                            const dt = doc.data().updatedAt ? new Date(doc.data().updatedAt.seconds * 1000).toLocaleString() : '-';
+                            footerTime.innerText = `Última: ${dt}`;
+                        }
+                        // update content only if element not focused
+                        const contentEl = node.querySelector('.card-content');
+                        if (document.activeElement !== contentEl) {
+                            const text = doc.data().text || '';
+                            if (contentEl.innerText !== text) contentEl.innerText = text;
+                        }
+                        fragment.appendChild(node);
+                    } else {
+                        // create a new node
+                        fragment.appendChild(createCardNode(doc));
+                    }
+                });
+
+                // Replace board children with fragment (efficient)
+                boardEl.innerHTML = '';
+                boardEl.appendChild(fragment);
+            }, err => {
+                console.error('onSnapshot error', err);
+                // podrías reconectar o mostrar error
+            });
+        }
+
+        startRealtime();
+
+        /***********************
+         * Botones: agregar, limpiar
+         ***********************/
+        addCardBtn.addEventListener('click', async () => {
+            const now = Date.now();
+            const newCard = {
+                text: 'Nueva card — edítame',
+                position: now, // por defecto al final
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            try {
+                await db.collection('cards').add(newCard);
+            } catch (e) { console.error('add err', e) }
+        });
+
+        clearAllBtn.addEventListener('click', async () => {
+            if (!confirm('Borrar todas las cards?')) return;
+            try {
+                const snapshot = await db.collection('cards').get();
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            } catch (e) { console.error('clear err', e) }
+        });
+
+        /***********************
+         * Helpers
+         ***********************/
+        function escapeHtml(str) {
+            // mantenemos saltos simples en innerText; evitamos XSS incluído en contenido editable.
+            if (!str) return '';
+            return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+    </script>
+</body>
+
+</html>
