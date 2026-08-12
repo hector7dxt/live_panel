@@ -55,10 +55,9 @@
     <div id="emptyMsg" class="empty" style="display:none">No hay cards. Crea la primera con "Agregar card".</div>
   </div>
 
-  <!-- Firebase compat CDN -->
+  <!-- Firebase compat CDN (Solo Database) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
   <script>
   /***********************
@@ -76,7 +75,6 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const storage = firebase.storage();
 
   /***********************
    * Variables y util
@@ -105,7 +103,7 @@
     el.className = 'card';
     el.draggable = true;
     el.dataset.id = id;
-    el.dataset.uploading = "false"; // Flag para proteger la interfaz durante la subida
+    el.dataset.uploading = "false";
 
     // Estructura interna
     el.innerHTML = `
@@ -124,9 +122,8 @@
 
       <div class="card-attachment">
         <input type="file" class="file-input" style="display:none;" />
-        <button class="small-btn btn-upload" style="width: 100%; margin-bottom: 8px;">📎 Adjuntar archivo</button>
+        <button class="small-btn btn-upload" style="width: 100%; margin-bottom: 8px;">📎 Adjuntar (Máx 50MB)</button>
         
-        <!-- Contenedor de progreso de subida -->
         <div class="progress-container">
           <div class="progress-bar">
             <div class="progress-fill"></div>
@@ -157,21 +154,19 @@
     const progressFill = el.querySelector('.progress-fill');
     const progressText = el.querySelector('.progress-text');
 
-    // Poblar valores iniciales
     titleEl.textContent = data.title || '';
     mainEl.textContent = data.text || '';
     extraEl.textContent = data.extra || '';
     updatedAtEl.textContent = `Última: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-'}`;
     posDisplayEl.textContent = `Pos: ${data.position ?? '-'}`;
 
-    // Si ya existe un archivo, mostrar el enlace
     if (data.fileUrl) {
       btnUpload.style.display = 'none';
-      fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a>`;
+      fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a><br><small class="muted">Expira en ~60 min</small>`;
     }
 
-    /***** Lógica de Subida de Archivos con Progreso *****/
-    let currentUploadTask = null; // Variable para almacenar el proceso y poder cancelarlo
+    /***** Lógica de Subida mediante API Externa (tmpfiles.org) *****/
+    let currentUploadTask = null;
 
     btnUpload.addEventListener('click', (ev) => {
       ev.stopPropagation(); 
@@ -187,7 +182,6 @@
         return;
       }
 
-      // Preparar interfaz para subida
       el.dataset.uploading = "true";
       btnUpload.style.display = 'none';
       progressContainer.style.display = 'block';
@@ -195,54 +189,68 @@
       progressFill.style.background = 'var(--accent)';
       progressText.innerText = 'Iniciando...';
 
-      const filePath = `archivos/${id}_${file.name}`;
-      const fileRef = storage.ref().child(filePath);
-      
-      // Iniciar tarea de subida monitoreable
-      currentUploadTask = fileRef.put(file);
+      // Usamos XMLHttpRequest para poder rastrear el progreso de la subida
+      currentUploadTask = new XMLHttpRequest();
 
-      currentUploadTask.on('state_changed', 
-        (snapshot) => {
-          // 1. Progreso
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      currentUploadTask.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = (e.loaded / e.total) * 100;
           progressFill.style.width = progress + '%';
           progressText.innerText = `Subiendo... ${Math.round(progress)}%`;
-        }, 
-        (error) => {
-          // 2. Errores o Cancelación
-          el.dataset.uploading = "false";
-          if (error.code === 'storage/canceled') {
-            console.log('Subida cancelada de forma segura.');
-          } else {
-            console.error("Error al subir:", error);
-            alert("Hubo un error al subir el archivo.");
-            btnUpload.style.display = 'block';
-          }
-          progressContainer.style.display = 'none';
-          currentUploadTask = null;
-        }, 
-        async () => {
-          // 3. Completado Exitosamente
-          progressText.innerText = "✅ Completado";
-          progressFill.style.background = "#48bb78"; // Color verde éxito
+        }
+      });
+
+      currentUploadTask.addEventListener('load', async () => {
+        if (currentUploadTask.status >= 200 && currentUploadTask.status < 300) {
+          const response = JSON.parse(currentUploadTask.responseText);
           
-          const fileUrl = await currentUploadTask.snapshot.ref.getDownloadURL();
+          // La API devuelve un enlace como: https://tmpfiles.org/12345/archivo.zip
+          // Reemplazamos tmpfiles.org/ por tmpfiles.org/dl/ para forzar la descarga directa
+          const rawUrl = response.data.url;
+          const directDownloadUrl = rawUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+          
+          progressText.innerText = "✅ Completado";
+          progressFill.style.background = "#48bb78";
           
           await db.collection('cards').doc(id).update({
-            fileUrl: fileUrl,
+            fileUrl: directDownloadUrl,
             fileName: file.name,
-            filePath: filePath,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
 
-          // Esperar un momento para mostrar el mensaje de éxito antes de quitar la barra
           setTimeout(() => {
             progressContainer.style.display = 'none';
             el.dataset.uploading = "false";
             currentUploadTask = null;
           }, 1500);
+        } else {
+          el.dataset.uploading = "false";
+          progressContainer.style.display = 'none';
+          btnUpload.style.display = 'block';
+          alert("Hubo un error al subir el archivo.");
+          currentUploadTask = null;
         }
-      );
+      });
+
+      currentUploadTask.addEventListener('abort', () => {
+        console.log('Subida cancelada de forma segura.');
+        currentUploadTask = null;
+      });
+
+      currentUploadTask.addEventListener('error', () => {
+        el.dataset.uploading = "false";
+        progressContainer.style.display = 'none';
+        btnUpload.style.display = 'block';
+        alert("Error de red al subir el archivo. Revisa tu conexión o posibles bloqueos de tu red.");
+        currentUploadTask = null;
+      });
+
+      currentUploadTask.open('POST', 'https://tmpfiles.org/api/v1/upload');
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      currentUploadTask.send(formData);
     });
 
     /***** Drag events *****/
@@ -254,24 +262,17 @@
       el.classList.remove('dragging');
     });
 
-    /***** Delete (Total Removal & Cancel Uploads) *****/
+    /***** Delete (Card removal & Upload abort) *****/
     el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
       ev.stopPropagation();
-      if (!confirm('¿Borrar esta card y destruir todo su contenido permanentemente?')) return;
+      if (!confirm('¿Borrar esta card?')) return;
       
       try {
-        // 1. Si hay una subida en curso, cancelarla inmediatamente
+        // Abortar si se está subiendo actualmente
         if (currentUploadTask) {
-          currentUploadTask.cancel();
+          currentUploadTask.abort();
         }
-
-        // 2. Destruir el archivo físico por completo si ya existe
-        if (data.filePath) {
-          const fileRef = storage.ref().child(data.filePath);
-          await fileRef.delete().catch(err => console.log("Archivo no encontrado en Storage", err));
-        }
-        
-        // 3. Eliminar el documento limpio de la base de datos
+        // Eliminamos la tarjeta limpia, tmpfiles eliminará el archivo solo en 60 minutos
         await db.collection('cards').doc(id).delete();
       } catch (err) {
         console.error('delete err', err);
@@ -306,12 +307,10 @@
       } catch (err) { console.error('save extra err', err); }
     }, 2500);
 
-    // Input listeners
     titleEl.addEventListener('input', (e) => saveTitle(e.target.innerText.trim()));
     mainEl.addEventListener('input', (e) => saveMain(e.target.innerText));
     extraEl.addEventListener('input', (e) => saveExtra(e.target.innerText));
 
-    // Prevenir drag al editar texto
     [titleEl, mainEl, extraEl].forEach(node => {
       node.addEventListener('mousedown', (e) => e.stopPropagation());
     });
@@ -429,7 +428,6 @@
           const posEl = node.querySelector('.pos-display');
           if (posEl) posEl.innerText = `Pos: ${data.position ?? '-'}`;
 
-          // Sincronizar archivo respetando si el usuario está subiendo algo activamente
           const isUploading = node.dataset.uploading === "true";
           if (!isUploading) {
             const btnUpload = node.querySelector('.btn-upload');
@@ -438,7 +436,7 @@
             if (data.fileUrl) {
               if (btnUpload) btnUpload.style.display = 'none';
               if (fileLinkContainer && !fileLinkContainer.innerHTML.includes(data.fileUrl)) {
-                fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a>`;
+                fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a><br><small class="muted">Expira en ~60 min</small>`;
               }
             } else {
               if (btnUpload) btnUpload.style.display = 'block';
@@ -495,23 +493,12 @@
     } catch (e) { console.error('add err', e); }
   });
 
-  // Destrucción total garantizada
   clearAllBtn.addEventListener('click', async () => {
-    if (!confirm('¿Borrar todas las cards y destruir todos los archivos almacenados?')) return;
+    if (!confirm('¿Borrar todas las cards? (Los archivos externos expirarán automáticamente en una hora)')) return;
     try {
       const snapshot = await db.collection('cards').get();
       const batch = db.batch();
-      const deletePromises = [];
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.filePath) {
-          deletePromises.push(storage.ref().child(data.filePath).delete().catch(e => console.log(e)));
-        }
-        batch.delete(doc.ref);
-      });
-
-      await Promise.all(deletePromises);
+      snapshot.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
     } catch (e) { console.error('clear err', e); }
   });
