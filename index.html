@@ -25,6 +25,15 @@
     .card-actions{display:flex;gap:8px}
     .card-content{flex:1;font-size:14px;color:#222;padding:8px;border-radius:8px;border:1px solid #eee;min-height:70px;outline:none;overflow:auto}
     .card-extra{font-size:13px;color:#333;padding:8px;border-radius:8px;border:1px solid #eee;min-height:40px;outline:none;overflow:auto}
+    
+    /* Estilos de archivos y progreso */
+    .card-attachment{padding: 0 8px;}
+    .file-link-container{font-size: 13px; word-break: break-all;}
+    .progress-container{display:none; margin-bottom: 8px;}
+    .progress-bar{height: 6px; background: #eee; border-radius: 4px; overflow: hidden;}
+    .progress-fill{width: 0%; height: 100%; background: var(--accent); transition: width 0.2s ease, background 0.3s ease;}
+    .progress-text{font-size: 11px; color: #666; text-align: center; margin-top: 4px; font-weight: 500;}
+
     .card-footer{display:flex;justify-content:space-between;align-items:center;gap:8px}
     .muted{color:#777;font-size:12px}
     .empty{color:#999;padding:40px;text-align:center;width:100%}
@@ -49,6 +58,7 @@
   <!-- Firebase compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
   <script>
   /***********************
@@ -66,6 +76,7 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const storage = firebase.storage();
 
   /***********************
    * Variables y util
@@ -75,7 +86,6 @@
   const clearAllBtn = document.getElementById('clearAllBtn');
   const emptyMsg = document.getElementById('emptyMsg');
 
-  // Debounce factory: default 2500ms
   function debounce(fn, wait = 2500) {
     let t;
     return (...args) => {
@@ -95,8 +105,9 @@
     el.className = 'card';
     el.draggable = true;
     el.dataset.id = id;
+    el.dataset.uploading = "false"; // Flag para proteger la interfaz durante la subida
 
-    // Build inner structure safely (we'll set textContent for editable fields)
+    // Estructura interna
     el.innerHTML = `
       <div class="card-header">
         <div class="card-left">
@@ -109,8 +120,22 @@
       </div>
 
       <div class="card-content" contenteditable="true" aria-label="Editar contenido principal"></div>
-
       <div class="card-extra" contenteditable="true" aria-label="Editar contenido adicional (extra)"></div>
+
+      <div class="card-attachment">
+        <input type="file" class="file-input" style="display:none;" />
+        <button class="small-btn btn-upload" style="width: 100%; margin-bottom: 8px;">📎 Adjuntar archivo</button>
+        
+        <!-- Contenedor de progreso de subida -->
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="progress-text">0%</div>
+        </div>
+
+        <div class="file-link-container"></div>
+      </div>
 
       <div class="card-footer">
         <div class="muted updated-at">Última: -</div>
@@ -118,35 +143,135 @@
       </div>
     `;
 
-    // References
+    // Referencias DOM
     const titleEl = el.querySelector('.card-title');
     const mainEl = el.querySelector('.card-content');
     const extraEl = el.querySelector('.card-extra');
     const updatedAtEl = el.querySelector('.updated-at');
     const posDisplayEl = el.querySelector('.pos-display');
+    
+    const fileInput = el.querySelector('.file-input');
+    const btnUpload = el.querySelector('.btn-upload');
+    const fileLinkContainer = el.querySelector('.file-link-container');
+    const progressContainer = el.querySelector('.progress-container');
+    const progressFill = el.querySelector('.progress-fill');
+    const progressText = el.querySelector('.progress-text');
 
-    // Populate initial values safely
+    // Poblar valores iniciales
     titleEl.textContent = data.title || '';
     mainEl.textContent = data.text || '';
     extraEl.textContent = data.extra || '';
     updatedAtEl.textContent = `Última: ${data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-'}`;
     posDisplayEl.textContent = `Pos: ${data.position ?? '-'}`;
 
+    // Si ya existe un archivo, mostrar el enlace
+    if (data.fileUrl) {
+      btnUpload.style.display = 'none';
+      fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a>`;
+    }
+
+    /***** Lógica de Subida de Archivos con Progreso *****/
+    let currentUploadTask = null; // Variable para almacenar el proceso y poder cancelarlo
+
+    btnUpload.addEventListener('click', (ev) => {
+      ev.stopPropagation(); 
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+
+      if (file.size > 50 * 1024 * 1024) {
+        alert("El archivo supera los 50MB permitidos.");
+        return;
+      }
+
+      // Preparar interfaz para subida
+      el.dataset.uploading = "true";
+      btnUpload.style.display = 'none';
+      progressContainer.style.display = 'block';
+      progressFill.style.width = '0%';
+      progressFill.style.background = 'var(--accent)';
+      progressText.innerText = 'Iniciando...';
+
+      const filePath = `archivos/${id}_${file.name}`;
+      const fileRef = storage.ref().child(filePath);
+      
+      // Iniciar tarea de subida monitoreable
+      currentUploadTask = fileRef.put(file);
+
+      currentUploadTask.on('state_changed', 
+        (snapshot) => {
+          // 1. Progreso
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          progressFill.style.width = progress + '%';
+          progressText.innerText = `Subiendo... ${Math.round(progress)}%`;
+        }, 
+        (error) => {
+          // 2. Errores o Cancelación
+          el.dataset.uploading = "false";
+          if (error.code === 'storage/canceled') {
+            console.log('Subida cancelada de forma segura.');
+          } else {
+            console.error("Error al subir:", error);
+            alert("Hubo un error al subir el archivo.");
+            btnUpload.style.display = 'block';
+          }
+          progressContainer.style.display = 'none';
+          currentUploadTask = null;
+        }, 
+        async () => {
+          // 3. Completado Exitosamente
+          progressText.innerText = "✅ Completado";
+          progressFill.style.background = "#48bb78"; // Color verde éxito
+          
+          const fileUrl = await currentUploadTask.snapshot.ref.getDownloadURL();
+          
+          await db.collection('cards').doc(id).update({
+            fileUrl: fileUrl,
+            fileName: file.name,
+            filePath: filePath,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Esperar un momento para mostrar el mensaje de éxito antes de quitar la barra
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+            el.dataset.uploading = "false";
+            currentUploadTask = null;
+          }, 1500);
+        }
+      );
+    });
+
     /***** Drag events *****/
     el.addEventListener('dragstart', (e) => {
       el.classList.add('dragging');
       e.dataTransfer.setData('text/plain', id);
-      // optional: e.dataTransfer.effectAllowed = 'move';
     });
     el.addEventListener('dragend', () => {
       el.classList.remove('dragging');
     });
 
-    /***** Delete *****/
+    /***** Delete (Total Removal & Cancel Uploads) *****/
     el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
       ev.stopPropagation();
-      if (!confirm('Borrar esta card?')) return;
+      if (!confirm('¿Borrar esta card y destruir todo su contenido permanentemente?')) return;
+      
       try {
+        // 1. Si hay una subida en curso, cancelarla inmediatamente
+        if (currentUploadTask) {
+          currentUploadTask.cancel();
+        }
+
+        // 2. Destruir el archivo físico por completo si ya existe
+        if (data.filePath) {
+          const fileRef = storage.ref().child(data.filePath);
+          await fileRef.delete().catch(err => console.log("Archivo no encontrado en Storage", err));
+        }
+        
+        // 3. Eliminar el documento limpio de la base de datos
         await db.collection('cards').doc(id).delete();
       } catch (err) {
         console.error('delete err', err);
@@ -154,7 +279,6 @@
     });
 
     /***** Save handlers (debounced) *****/
-    // All saves update their specific field and updatedAt (serverTimestamp)
     const saveTitle = debounce(async (value) => {
       try {
         await db.collection('cards').doc(id).update({
@@ -183,17 +307,11 @@
     }, 2500);
 
     // Input listeners
-    titleEl.addEventListener('input', (e) => {
-      saveTitle(e.target.innerText.trim());
-    });
-    mainEl.addEventListener('input', (e) => {
-      saveMain(e.target.innerText);
-    });
-    extraEl.addEventListener('input', (e) => {
-      saveExtra(e.target.innerText);
-    });
+    titleEl.addEventListener('input', (e) => saveTitle(e.target.innerText.trim()));
+    mainEl.addEventListener('input', (e) => saveMain(e.target.innerText));
+    extraEl.addEventListener('input', (e) => saveExtra(e.target.innerText));
 
-    // prevent starting drag when interacting with editable areas
+    // Prevenir drag al editar texto
     [titleEl, mainEl, extraEl].forEach(node => {
       node.addEventListener('mousedown', (e) => e.stopPropagation());
     });
@@ -202,7 +320,7 @@
   }
 
   /***********************
-   * Drag & Drop reordering (visual during drag)
+   * Drag & Drop reordering
    ***********************/
   boardEl.addEventListener('dragover', e => {
     e.preventDefault();
@@ -251,7 +369,6 @@
     }
   });
 
-  // get element after cursor X
   function getDragAfterElement(container, x) {
     const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
     const closest = draggableElements.reduce((closest, child) => {
@@ -266,7 +383,6 @@
     return closest.element;
   }
 
-  // fetch single card doc data
   async function getCardData(node) {
     if (!node) return null;
     try {
@@ -290,58 +406,69 @@
         return;
       } else emptyMsg.style.display = 'none';
 
-      // Map current nodes by id (to reuse DOM nodes and preserve focus)
       const existingMap = {};
       Array.from(boardEl.children).forEach(node => { existingMap[node.dataset.id] = node; });
 
       const fragment = document.createDocumentFragment();
 
-      // Build nodes in the order of docs and also add numbering based on index
       docs.forEach((doc, idx) => {
         const id = doc.id;
-        if (existingMap[id]) {
-          // reuse node and update dynamic parts (timestamp, pos, content if not focused)
-          const node = existingMap[id];
+        const data = doc.data();
 
-          // update number badge
+        if (existingMap[id]) {
+          const node = existingMap[id];
+          
           const numEl = node.querySelector('.card-number');
           if (numEl) numEl.textContent = `#${idx + 1}`;
 
-          // update footer
           const footerTime = node.querySelector('.updated-at');
           if (footerTime) {
-            const dt = doc.data().updatedAt ? new Date(doc.data().updatedAt.seconds * 1000).toLocaleString() : '-';
+            const dt = data.updatedAt ? new Date(data.updatedAt.seconds * 1000).toLocaleString() : '-';
             footerTime.innerText = `Última: ${dt}`;
           }
           const posEl = node.querySelector('.pos-display');
-          if (posEl) posEl.innerText = `Pos: ${doc.data().position ?? '-'}`;
+          if (posEl) posEl.innerText = `Pos: ${data.position ?? '-'}`;
 
-          // update editable fields only if not focused
+          // Sincronizar archivo respetando si el usuario está subiendo algo activamente
+          const isUploading = node.dataset.uploading === "true";
+          if (!isUploading) {
+            const btnUpload = node.querySelector('.btn-upload');
+            const fileLinkContainer = node.querySelector('.file-link-container');
+            
+            if (data.fileUrl) {
+              if (btnUpload) btnUpload.style.display = 'none';
+              if (fileLinkContainer && !fileLinkContainer.innerHTML.includes(data.fileUrl)) {
+                fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" target="_blank" download>⬇️ Descargar ${data.fileName || 'Archivo'}</a>`;
+              }
+            } else {
+              if (btnUpload) btnUpload.style.display = 'block';
+              if (fileLinkContainer) fileLinkContainer.innerHTML = '';
+            }
+          }
+
           const titleEl = node.querySelector('.card-title');
           const mainEl = node.querySelector('.card-content');
           const extraEl = node.querySelector('.card-extra');
 
           if (document.activeElement !== titleEl) {
-            const titleVal = doc.data().title || '';
+            const titleVal = data.title || '';
             if (titleEl.innerText !== titleVal) titleEl.innerText = titleVal;
           }
           if (document.activeElement !== mainEl) {
-            const mainVal = doc.data().text || '';
+            const mainVal = data.text || '';
             if (mainEl.innerText !== mainVal) mainEl.innerText = mainVal;
           }
           if (document.activeElement !== extraEl) {
-            const extraVal = doc.data().extra || '';
+            const extraVal = data.extra || '';
             if (extraEl.innerText !== extraVal) extraEl.innerText = extraVal;
           }
 
           fragment.appendChild(node);
         } else {
-          // create new node (pass idx+1 for numbering)
           fragment.appendChild(createCardNode(doc, idx + 1));
         }
       });
 
-      // Replace board with new fragment (keeps reused nodes)
       boardEl.innerHTML = '';
       boardEl.appendChild(fragment);
     }, err => {
@@ -357,9 +484,9 @@
   addCardBtn.addEventListener('click', async () => {
     const now = Date.now();
     const newCard = {
-      title: '',               // editable title
-      text: 'Nueva card — edítame', // main text
-      extra: '',               // nuevo cajón extra
+      title: '',
+      text: 'Nueva card — edítame',
+      extra: '',
       position: now,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -368,19 +495,27 @@
     } catch (e) { console.error('add err', e); }
   });
 
+  // Destrucción total garantizada
   clearAllBtn.addEventListener('click', async () => {
-    if (!confirm('Borrar todas las cards?')) return;
+    if (!confirm('¿Borrar todas las cards y destruir todos los archivos almacenados?')) return;
     try {
       const snapshot = await db.collection('cards').get();
       const batch = db.batch();
-      snapshot.forEach(doc => batch.delete(doc.ref));
+      const deletePromises = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.filePath) {
+          deletePromises.push(storage.ref().child(data.filePath).delete().catch(e => console.log(e)));
+        }
+        batch.delete(doc.ref);
+      });
+
+      await Promise.all(deletePromises);
       await batch.commit();
     } catch (e) { console.error('clear err', e); }
   });
 
-  /***********************
-   * Helpers
-   ***********************/
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
