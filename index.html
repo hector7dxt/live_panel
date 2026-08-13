@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Realtime Board — Pro</title>
+  <title>Realtime Board — Ultra</title>
   <style>
     :root {
+      /* Colores Modo Claro */
       --bg: #f5f7fb; 
       --board-bg: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-      --card: #ffffff; 
       --text: #222222; 
       --muted: #777777;
       --border: #eeeeee;
@@ -17,64 +17,95 @@
       --danger: #e53e3e;
       --success: #38a169;
       --warning: #d69e2e;
+      
+      /* Paleta de Tarjetas (Claro) */
+      --c-default: #ffffff;
+      --c-red: #fff1f2;
+      --c-blue: #eff6ff;
+      --c-green: #f0fdf4;
+      --c-yellow: #fefce8;
     }
     
     [data-theme="dark"] {
+      /* Colores Modo Oscuro */
       --bg: #111827;
       --board-bg: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-      --card: #1f2937;
       --text: #f3f4f6;
       --muted: #9ca3af;
       --border: #374151;
       --accent: #818cf8;
       --accent-hover: #6366f1;
+
+      /* Paleta de Tarjetas (Oscuro) */
+      --c-default: #1f2937;
+      --c-red: #3f1619;
+      --c-blue: #172554;
+      --c-green: #14532d;
+      --c-yellow: #422006;
     }
 
     * { box-sizing: border-box; }
     body { font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto; background: var(--bg); color: var(--text); margin: 0; padding: 28px; transition: background 0.3s ease, color 0.3s ease; }
     
-    header { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+    header { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
     h1 { font-size: 20px; color: var(--text); margin: 0; }
     
-    .controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .controls { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     button { background: var(--accent); color: #fff; border: 0; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
     button:hover { background: var(--accent-hover); }
     
-    .small-btn { background: var(--card); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; font-weight: 400; }
+    .small-btn { background: var(--c-default); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; font-weight: 400; }
     .small-btn:hover { background: var(--border); }
     .icon-btn { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 16px; }
     
     .board-wrap { overflow: auto; padding: 12px; border-radius: 12px; }
     .board { display: flex; gap: 14px; align-items: flex-start; padding: 18px; min-height: 220px; background: var(--board-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: background 0.3s; flex-wrap: wrap; }
     
-    /* Tarjetas */
-    .card { width: 260px; min-height: 160px; background: var(--card); border-radius: 12px; padding: 12px 12px 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 8px; cursor: grab; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; }
+    /* Tarjetas y Colores */
+    .card { width: 280px; min-height: 160px; background: var(--c-default); border-radius: 12px; padding: 12px 12px 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 8px; cursor: grab; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s, background 0.3s; }
     .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .card.dragging { opacity: 0; /* Oculta la original al arrastrar */ }
+    .card.dragging { opacity: 0; }
+    .card[data-color="red"] { background: var(--c-red); }
+    .card[data-color="blue"] { background: var(--c-blue); }
+    .card[data-color="green"] { background: var(--c-green); }
+    .card[data-color="yellow"] { background: var(--c-yellow); }
     
-    /* Espacio fantasma Drag & Drop */
-    .drop-placeholder { width: 260px; min-height: 160px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(102, 126, 234, 0.05); }
+    .drop-placeholder { width: 280px; min-height: 160px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(102, 126, 234, 0.05); }
 
-    .card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    /* Estructura Interna */
+    .card-header { display: flex; justify-content: space-between; align-items: center; gap: 4px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px; }
     .card-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-    .card-number { background: var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; }
-    
+    .card-number { background: rgba(0,0,0,0.05); color: var(--text); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+    .pin-icon { display: none; font-size: 14px; }
+    .card.is-pinned .pin-icon { display: block; }
+    .card.is-pinned { border: 1px solid var(--accent); }
+
     .card-title { font-weight: 600; color: var(--text); font-size: 14px; min-width: 0; outline: none; border: none; background: transparent; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text; }
     .card-title[contenteditable="true"]:focus { box-shadow: 0 0 0 2px rgba(102,126,234,0.3); border-radius: 4px; overflow: visible; white-space: normal; }
     
-    .card-actions { display: flex; gap: 4px; }
+    .card-actions { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
     .small-icon-btn { background: transparent; color: var(--muted); border: 1px solid transparent; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-    .small-icon-btn:hover { background: var(--border); color: var(--text); }
+    .small-icon-btn:hover { background: rgba(0,0,0,0.05); color: var(--text); }
     .btn-delete:hover { background: rgba(229, 62, 62, 0.1); color: var(--danger); }
     
-    .card-content, .card-extra { font-size: 13px; color: var(--text); padding: 8px; border-radius: 8px; border: 1px solid var(--border); outline: none; overflow: auto; cursor: text; white-space: pre-wrap; word-break: break-word; }
+    /* Contenido y Modo Código */
+    .card-content, .card-extra { font-size: 13px; color: var(--text); padding: 8px; border-radius: 8px; border: 1px solid var(--border); outline: none; overflow: auto; cursor: text; white-space: pre-wrap; word-break: break-word; background: rgba(255,255,255,0.02); }
     .card-content { flex: 1; min-height: 80px; }
     .card-extra { min-height: 40px; font-size: 12px; color: var(--muted); }
     .card-content[contenteditable="true"]:focus, .card-extra[contenteditable="true"]:focus { border-color: var(--accent); background: rgba(102, 126, 234, 0.03); }
     
+    .card.code-mode .card-content, .card.code-mode .card-extra { font-family: 'Courier New', Courier, monospace; font-size: 12px; background: rgba(0,0,0,0.05); }
+    
+    /* Placeholder fantasma */
+    [contenteditable]:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; display: block; opacity: 0.6; }
+
+    /* Estado Bloqueado */
+    .card.locked [contenteditable] { pointer-events: none; opacity: 0.9; border-color: transparent; }
+    .card.locked .hide-on-lock { display: none !important; }
+
     /* Archivos */
     .card-attachment { padding: 4px; }
-    .btn-download { display: block; text-align: center; text-decoration: none; width: 100%; margin-bottom: 4px; font-size: 13px; font-weight: 500; background: rgba(56, 161, 105, 0.1); color: var(--success); border-color: rgba(56, 161, 105, 0.3); }
+    .btn-download { display: block; text-align: center; text-decoration: none; width: 100%; margin-bottom: 4px; font-size: 13px; font-weight: 500; background: rgba(56, 161, 105, 0.1); color: var(--success); border-color: rgba(56, 161, 105, 0.3); padding: 6px; border-radius: 6px; }
     .btn-download:hover { background: rgba(56, 161, 105, 0.2); }
     
     .progress-container { display: none; margin-bottom: 8px; }
@@ -88,9 +119,15 @@
     
     .empty { color: var(--muted); padding: 40px; text-align: center; width: 100%; font-size: 14px; }
     
+    /* Modal QR */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal-content { background-color: var(--c-default); padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
+    .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: var(--muted); }
+    #qrImage { border-radius: 8px; margin-top: 10px; max-width: 100%; }
+
     /* Esqueleto Animado */
     @keyframes pulse { 0%, 100% {opacity: 1;} 50% {opacity: 0.4;} }
-    .skeleton-card { width: 260px; height: 220px; background: var(--border); border-radius: 12px; animation: pulse 1.5s infinite; }
+    .skeleton-card { width: 280px; height: 220px; background: var(--border); border-radius: 12px; animation: pulse 1.5s infinite; }
 
     @media (max-width:700px){.board{padding:12px;gap:10px}.card{width:100%}.skeleton-card{width: 100%;}}
   </style>
@@ -99,14 +136,15 @@
   <header>
     <h1>Panel Vivo — Pro</h1>
     <div class="controls">
+      <button id="qrBtn" class="icon-btn" title="Mostrar código QR">📱 QR</button>
       <button id="themeToggleBtn" class="icon-btn" title="Cambiar tema">🌙</button>
+      <button id="autoDeleteBtn" class="small-btn" title="Borrar tarjetas de > 24 horas">⏳ Limpieza: OFF</button>
       <button id="addCardBtn">➕ Añadir Tarjeta</button>
-      <button id="clearAllBtn" class="small-btn">🗑 Limpiar Todo</button>
+      <button id="clearAllBtn" class="small-btn hide-on-lock">🗑 Limpiar Todo</button>
     </div>
   </header>
 
   <div class="board-wrap">
-    <!-- Skeleton loader para espera activa -->
     <div id="skeletonLoader" class="board">
       <div class="skeleton-card"></div>
       <div class="skeleton-card"></div>
@@ -115,6 +153,15 @@
     
     <div id="board" class="board" aria-live="polite" style="display:none;"></div>
     <div id="emptyMsg" class="empty" style="display:none">El panel está vacío. Crea la primera tarjeta.</div>
+  </div>
+
+  <!-- Modal para Código QR -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3 style="margin-top:0; color:var(--text);">Escanea para acceder</h3>
+      <img id="qrImage" src="" alt="Código QR">
+    </div>
   </div>
 
   <!-- Firebase Database SDK -->
@@ -139,15 +186,11 @@
   const db = firebase.firestore();
 
   /***********************
-   * UI y Modo Oscuro
+   * Preferencias (Tema y Auto-limpieza)
    ***********************/
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   let isDark = localStorage.getItem('theme') === 'dark';
-  
-  if (isDark) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    themeToggleBtn.textContent = '☀️';
-  }
+  if (isDark) { document.documentElement.setAttribute('data-theme', 'dark'); themeToggleBtn.textContent = '☀️'; }
 
   themeToggleBtn.addEventListener('click', () => {
     isDark = !isDark;
@@ -156,21 +199,47 @@
     themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
   });
 
+  const autoDeleteBtn = document.getElementById('autoDeleteBtn');
+  let isAutoDelete = localStorage.getItem('autoDelete') === 'true';
+  autoDeleteBtn.textContent = isAutoDelete ? '⏳ Limpieza: ON' : '⏳ Limpieza: OFF';
+  autoDeleteBtn.style.color = isAutoDelete ? 'var(--success)' : 'inherit';
+
+  autoDeleteBtn.addEventListener('click', () => {
+    isAutoDelete = !isAutoDelete;
+    localStorage.setItem('autoDelete', isAutoDelete);
+    autoDeleteBtn.textContent = isAutoDelete ? '⏳ Limpieza: ON' : '⏳ Limpieza: OFF';
+    autoDeleteBtn.style.color = isAutoDelete ? 'var(--success)' : 'inherit';
+  });
+
+  /***********************
+   * QR Modal Logic
+   ***********************/
+  const qrBtn = document.getElementById('qrBtn');
+  const qrModal = document.getElementById('qrModal');
+  const qrImage = document.getElementById('qrImage');
+  const closeModal = document.querySelector('.close-modal');
+
+  qrBtn.addEventListener('click', () => {
+    const currentUrl = encodeURIComponent(window.location.href);
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${currentUrl}`;
+    qrModal.style.display = 'flex';
+  });
+
+  closeModal.addEventListener('click', () => qrModal.style.display = 'none');
+  window.addEventListener('click', (e) => { if (e.target === qrModal) qrModal.style.display = 'none'; });
+
+  /***********************
+   * Variables del Panel
+   ***********************/
   const boardEl = document.getElementById('board');
   const skeletonEl = document.getElementById('skeletonLoader');
   const addCardBtn = document.getElementById('addCardBtn');
   const clearAllBtn = document.getElementById('clearAllBtn');
   const emptyMsg = document.getElementById('emptyMsg');
+  const colorsArray = ['default', 'red', 'blue', 'green', 'yellow'];
 
-  /***********************
-   * Herramientas (Debounce, Auto-link, Escapes)
-   ***********************/
   function debounce(fn, wait = 1500) {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), wait);
-    };
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
   }
 
   function escapeHtml(str) {
@@ -181,11 +250,7 @@
   function linkify(text) {
     if (!text) return '';
     const escaped = escapeHtml(text);
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return escaped.replace(urlRegex, (url) => {
-      // Se utiliza contenteditable="false" para que al editar texto cerca, el usuario no rompa la estructura HTML
-      return `<a href="${url}" target="_blank" contenteditable="false" style="color: var(--accent); text-decoration: underline;">${url}</a>`;
-    });
+    return escaped.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" contenteditable="false" style="color: var(--accent); text-decoration: underline;">$1</a>');
   }
 
   /***********************
@@ -197,35 +262,45 @@
 
     const el = document.createElement('div');
     el.className = 'card';
-    el.draggable = true;
+    el.draggable = !data.isLocked; 
     el.dataset.id = id;
     el.dataset.uploading = "false";
+    
+    // Aplicar estilos visuales guardados
+    if (data.color && data.color !== 'default') el.dataset.color = data.color;
+    if (data.isCodeMode) el.classList.add('code-mode');
+    if (data.isPinned) el.classList.add('is-pinned');
+    if (data.isLocked) el.classList.add('locked');
 
     el.innerHTML = `
       <div class="card-header">
         <div class="card-left">
           <div class="card-number">#${indexForNumbering}</div>
-          <div class="card-title" contenteditable="true" spellcheck="false" aria-label="Título"></div>
+          <div class="pin-icon">📌</div>
+          <div class="card-title" contenteditable="${!data.isLocked}" spellcheck="false" data-placeholder="Título..."></div>
         </div>
         <div class="card-actions">
-          <button class="small-icon-btn btn-copy" title="Copiar al portapapeles">📋</button>
-          <button class="small-icon-btn btn-delete" title="Borrar">✖</button>
+          <button class="small-icon-btn btn-pin hide-on-lock" title="Fijar al principio">📌</button>
+          <button class="small-icon-btn btn-color hide-on-lock" title="Cambiar Color">🎨</button>
+          <button class="small-icon-btn btn-code hide-on-lock" title="Modo Código">&lt;/&gt;</button>
+          <button class="small-icon-btn btn-copy" title="Copiar Todo">📋</button>
+          <button class="small-icon-btn btn-lock" title="Bloquear edición">${data.isLocked ? '🔒' : '🔓'}</button>
+          <button class="small-icon-btn btn-delete hide-on-lock" title="Borrar">✖</button>
         </div>
       </div>
 
-      <div class="card-content" contenteditable="true" spellcheck="false" aria-label="Contenido"></div>
-      <div class="card-extra" contenteditable="true" spellcheck="false" aria-label="Extras"></div>
+      <div class="card-content" contenteditable="${!data.isLocked}" spellcheck="false" data-placeholder="📝 Escribe algo o pega enlaces..."></div>
+      <div class="card-extra" contenteditable="${!data.isLocked}" spellcheck="false" data-placeholder="Notas extra..."></div>
 
-      <div class="card-attachment">
+      <div class="card-attachment hide-on-lock">
         <input type="file" class="file-input" style="display:none;" />
         <button class="small-btn btn-upload" style="width: 100%;">📎 Subir archivo (Max 50MB)</button>
-        
         <div class="progress-container">
           <div class="progress-bar"><div class="progress-fill"></div></div>
           <div class="progress-text">0%</div>
         </div>
-        <div class="file-link-container"></div>
       </div>
+      <div class="file-link-container" style="padding:0 4px;"></div>
 
       <div class="card-footer">
         <div class="muted updated-at">--</div>
@@ -238,27 +313,15 @@
     const extraEl = el.querySelector('.card-extra');
     const updatedAtEl = el.querySelector('.updated-at');
     const statusBadge = el.querySelector('.status-badge');
-    
-    const fileInput = el.querySelector('.file-input');
-    const btnUpload = el.querySelector('.btn-upload');
     const fileLinkContainer = el.querySelector('.file-link-container');
-    const progressContainer = el.querySelector('.progress-container');
-    const progressFill = el.querySelector('.progress-fill');
-    const progressText = el.querySelector('.progress-text');
+    const btnUpload = el.querySelector('.btn-upload');
 
-    // Función auxiliar para estado de guardado
+    // Estado Guardando
     const setStatus = (state) => {
-       if (state === 'saving') {
-         statusBadge.textContent = '⏳ Guardando...';
-         statusBadge.style.color = 'var(--warning)';
-       } else if (state === 'saved') {
-         statusBadge.textContent = '✅ Guardado';
-         statusBadge.style.color = 'var(--success)';
-         setTimeout(() => { if (statusBadge.textContent === '✅ Guardado') statusBadge.textContent = ''; }, 2000);
-       }
+       if (state === 'saving') { statusBadge.textContent = '⏳ Guardando...'; statusBadge.style.color = 'var(--warning)'; } 
+       else if (state === 'saved') { statusBadge.textContent = '✅ Guardado'; statusBadge.style.color = 'var(--success)'; setTimeout(() => { if(statusBadge.textContent === '✅ Guardado') statusBadge.textContent = ''; }, 2000); }
     };
 
-    // Inicialización de textos con Linkify
     titleEl.textContent = data.title || '';
     mainEl.innerHTML = linkify(data.text);
     extraEl.innerHTML = linkify(data.extra);
@@ -268,27 +331,75 @@
       updatedAtEl.textContent = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
     }
 
-    // Configuración de la descarga directa nativa
     if (data.fileUrl) {
-      btnUpload.style.display = 'none';
-      fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" download="${data.fileName || 'archivo'}" class="small-btn btn-download">⬇️ Descargar ${data.fileName || ''}</a>`;
+      if(btnUpload) btnUpload.style.display = 'none';
+      fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" download="${data.fileName || 'archivo'}" class="btn-download">⬇️ Descargar ${data.fileName || ''}</a>`;
     }
 
-    /***** Copiar al portapapeles *****/
+    /***** Funciones de Interfaz (Header) *****/
+    
+    // Fijar al principio (Pin)
+    el.querySelector('.btn-pin').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const isPinned = el.classList.contains('is-pinned');
+      await db.collection('cards').doc(id).update({ isPinned: !isPinned });
+    });
+
+    // Ciclo de Colores
+    el.querySelector('.btn-color').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const currentColor = el.dataset.color || 'default';
+      let nextIndex = (colorsArray.indexOf(currentColor) + 1) % colorsArray.length;
+      await db.collection('cards').doc(id).update({ color: colorsArray[nextIndex] });
+    });
+
+    // Modo Código
+    el.querySelector('.btn-code').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const isCodeMode = el.classList.contains('code-mode');
+      await db.collection('cards').doc(id).update({ isCodeMode: !isCodeMode });
+    });
+
+    // Candado de Seguridad
+    el.querySelector('.btn-lock').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const isLocked = el.classList.contains('locked');
+      await db.collection('cards').doc(id).update({ isLocked: !isLocked });
+    });
+
+    // Copiar
     el.querySelector('.btn-copy').addEventListener('click', (ev) => {
       ev.stopPropagation();
       const content = `${titleEl.innerText}\n\n${mainEl.innerText}\n\n${extraEl.innerText}`;
       navigator.clipboard.writeText(content.trim());
-      
-      const btn = ev.target;
-      btn.textContent = '✅';
-      setTimeout(() => btn.textContent = '📋', 1500);
+      const btn = ev.target; btn.textContent = '✅'; setTimeout(() => btn.textContent = '📋', 1500);
     });
 
-    /***** Subida de Archivos con Tmpfiles *****/
-    let currentUploadTask = null;
+    // Borrar
+    el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if (!confirm('¿Eliminar tarjeta?')) return;
+      await db.collection('cards').doc(id).delete();
+    });
 
-    btnUpload.addEventListener('click', (ev) => { ev.stopPropagation(); fileInput.click(); });
+    /***** Auto-Guardado *****/
+    const saveTitle = debounce(async (val) => { await db.collection('cards').doc(id).update({title: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
+    const saveMain = debounce(async (val) => { await db.collection('cards').doc(id).update({text: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
+    const saveExtra = debounce(async (val) => { await db.collection('cards').doc(id).update({extra: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
+
+    titleEl.addEventListener('input', (e) => { setStatus('saving'); saveTitle(e.target.innerText.trim()); });
+    mainEl.addEventListener('input', (e) => { setStatus('saving'); saveMain(e.target.innerText); });
+    extraEl.addEventListener('input', (e) => { setStatus('saving'); saveExtra(e.target.innerText); });
+
+    [titleEl, mainEl, extraEl].forEach(node => node.addEventListener('mousedown', (e) => e.stopPropagation()));
+
+    /***** Subida de Archivos (tmpfiles API) *****/
+    const fileInput = el.querySelector('.file-input');
+    const progressContainer = el.querySelector('.progress-container');
+    const progressFill = el.querySelector('.progress-fill');
+    const progressText = el.querySelector('.progress-text');
+
+    if(btnUpload) btnUpload.addEventListener('click', (ev) => { ev.stopPropagation(); fileInput.click(); });
 
     fileInput.addEventListener('change', (ev) => {
       const file = ev.target.files[0];
@@ -301,8 +412,8 @@
       progressFill.style.width = '0%';
       progressText.innerText = 'Iniciando...';
 
-      currentUploadTask = new XMLHttpRequest();
-      currentUploadTask.upload.addEventListener('progress', (e) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
           progressFill.style.width = percent + '%';
@@ -310,85 +421,44 @@
         }
       });
 
-      currentUploadTask.addEventListener('load', async () => {
-        if (currentUploadTask.status >= 200 && currentUploadTask.status < 300) {
-          const response = JSON.parse(currentUploadTask.responseText);
-          const directUrl = response.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-          
-          progressText.innerText = "✅ Subido";
-          progressFill.style.background = "var(--success)";
-          
-          await db.collection('cards').doc(id).update({
-            fileUrl: directUrl,
-            fileName: file.name,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-
-          setTimeout(() => {
-            progressContainer.style.display = 'none';
-            el.dataset.uploading = "false";
-            currentUploadTask = null;
-          }, 1500);
+      xhr.addEventListener('load', async () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const res = JSON.parse(xhr.responseText);
+          const directUrl = res.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+          progressText.innerText = "✅ Subido"; progressFill.style.background = "var(--success)";
+          await db.collection('cards').doc(id).update({ fileUrl: directUrl, fileName: file.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          setTimeout(() => { progressContainer.style.display = 'none'; el.dataset.uploading = "false"; }, 1500);
         } else {
-          el.dataset.uploading = "false";
-          progressContainer.style.display = 'none';
-          btnUpload.style.display = 'block';
-          currentUploadTask = null;
+          el.dataset.uploading = "false"; progressContainer.style.display = 'none'; btnUpload.style.display = 'block';
         }
       });
 
-      currentUploadTask.addEventListener('abort', () => currentUploadTask = null);
-      currentUploadTask.open('POST', 'https://tmpfiles.org/api/v1/upload');
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      currentUploadTask.send(formData);
-    });
-
-    /***** Borrado y Aborto *****/
-    el.querySelector('.btn-delete').addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      if (!confirm('¿Eliminar tarjeta?')) return;
-      if (currentUploadTask) currentUploadTask.abort();
-      await db.collection('cards').doc(id).delete();
-    });
-
-    /***** Auto-Guardado en la Base de Datos *****/
-    const saveTitle = debounce(async (val) => { await db.collection('cards').doc(id).update({title: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
-    const saveMain = debounce(async (val) => { await db.collection('cards').doc(id).update({text: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
-    const saveExtra = debounce(async (val) => { await db.collection('cards').doc(id).update({extra: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setStatus('saved'); });
-
-    titleEl.addEventListener('input', (e) => { setStatus('saving'); saveTitle(e.target.innerText.trim()); });
-    mainEl.addEventListener('input', (e) => { setStatus('saving'); saveMain(e.target.innerText); });
-    extraEl.addEventListener('input', (e) => { setStatus('saving'); saveExtra(e.target.innerText); });
-
-    // Evitar que inicie el drag al hacer click en zonas de texto
-    [titleEl, mainEl, extraEl].forEach(node => {
-      node.addEventListener('mousedown', (e) => e.stopPropagation());
+      xhr.open('POST', 'https://tmpfiles.org/api/v1/upload');
+      const formData = new FormData(); formData.append('file', file);
+      xhr.send(formData);
     });
 
     /***** Drag & Drop Lógica Local *****/
     el.addEventListener('dragstart', (e) => {
+      if(data.isLocked) { e.preventDefault(); return; }
       window.draggingNode = el;
       el.classList.add('dragging');
       e.dataTransfer.setData('text/plain', id);
-      setTimeout(() => el.style.display = 'none', 0); // Oculta original
+      setTimeout(() => el.style.display = 'none', 0);
     });
 
     el.addEventListener('dragend', () => {
       el.classList.remove('dragging');
-      el.style.display = ''; // Restaura
+      el.style.display = ''; 
       window.draggingNode = null;
-      if(window.dragPlaceholder && window.dragPlaceholder.parentNode) {
-        window.dragPlaceholder.parentNode.removeChild(window.dragPlaceholder);
-      }
+      if(window.dragPlaceholder && window.dragPlaceholder.parentNode) window.dragPlaceholder.parentNode.removeChild(window.dragPlaceholder);
     });
 
     return el;
   }
 
   /***********************
-   * Ghosting Global (Espacio Fantasma)
+   * Ghosting Global Drag & Drop
    ***********************/
   window.dragPlaceholder = document.createElement('div');
   window.dragPlaceholder.className = 'drop-placeholder';
@@ -397,13 +467,9 @@
   boardEl.addEventListener('dragover', e => {
     e.preventDefault();
     if (!window.draggingNode) return;
-    
     const afterEl = getDragAfterElement(boardEl, e.clientX);
-    if (afterEl == null) {
-      boardEl.appendChild(window.dragPlaceholder);
-    } else {
-      boardEl.insertBefore(window.dragPlaceholder, afterEl);
-    }
+    if (afterEl == null) boardEl.appendChild(window.dragPlaceholder);
+    else boardEl.insertBefore(window.dragPlaceholder, afterEl);
   });
 
   boardEl.addEventListener('drop', async (e) => {
@@ -411,34 +477,21 @@
     if (!window.draggingNode) return;
     const id = window.draggingNode.dataset.id;
     
-    // Intercambiar placeholder visual por nodo real instantáneamente
-    if (window.dragPlaceholder.parentNode) {
-      boardEl.insertBefore(window.draggingNode, window.dragPlaceholder);
-    }
+    if (window.dragPlaceholder.parentNode) boardEl.insertBefore(window.draggingNode, window.dragPlaceholder);
 
-    // Calcular y guardar nueva posición
     const nodes = Array.from(boardEl.querySelectorAll('.card:not(.drop-placeholder)'));
     const idx = nodes.indexOf(window.draggingNode);
     let newPos;
     
     if (idx === 0) {
-      const next = await getCardData(nodes[1]);
-      newPos = next ? next.position - 1000 : Date.now();
+      const next = await getCardData(nodes[1]); newPos = next ? next.position - 1000 : Date.now();
     } else if (idx === nodes.length - 1) {
-      const prev = await getCardData(nodes[idx - 1]);
-      newPos = prev ? prev.position + 1000 : Date.now();
+      const prev = await getCardData(nodes[idx - 1]); newPos = prev ? prev.position + 1000 : Date.now();
     } else {
-      const prev = await getCardData(nodes[idx - 1]);
-      const next = await getCardData(nodes[idx + 1]);
-      newPos = ((prev.position || 0) + (next.position || 0)) / 2;
+      const prev = await getCardData(nodes[idx - 1]); const next = await getCardData(nodes[idx + 1]); newPos = ((prev.position || 0) + (next.position || 0)) / 2;
     }
 
-    if (newPos) {
-      await db.collection('cards').doc(id).update({
-        position: newPos,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
+    if (newPos) await db.collection('cards').doc(id).update({ position: newPos, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
   });
 
   function getDragAfterElement(container, x) {
@@ -458,78 +511,77 @@
   }
 
   /***********************
-   * Sincronización en Tiempo Real
+   * Sincronización Realtime y Ordenamiento
    ***********************/
   function startRealtime() {
     db.collection('cards').orderBy('position', 'asc').onSnapshot(snapshot => {
-      
-      // Ocultar esqueleto y mostrar tablero
-      skeletonEl.style.display = 'none';
-      boardEl.style.display = 'flex';
+      skeletonEl.style.display = 'none'; boardEl.style.display = 'flex';
 
       const docs = snapshot.docs;
-      if (docs.length === 0) {
-        boardEl.innerHTML = '';
-        emptyMsg.style.display = 'block';
-        return;
-      } else {
-        emptyMsg.style.display = 'none';
+      
+      // Auto-Limpieza 24h
+      if (isAutoDelete) {
+        const now = Date.now();
+        docs.forEach(doc => {
+           const dt = doc.data().updatedAt;
+           if (dt && !doc.data().isLocked) {
+             const timeDiff = now - (dt.seconds * 1000);
+             if (timeDiff > 24 * 60 * 60 * 1000) db.collection('cards').doc(doc.id).delete();
+           }
+        });
       }
+
+      if (docs.length === 0) { boardEl.innerHTML = ''; emptyMsg.style.display = 'block'; return; } 
+      else emptyMsg.style.display = 'none';
+
+      // Ordenar: Fijadas (Pins) primero, luego por posición normal
+      const pinnedDocs = []; const unpinnedDocs = [];
+      docs.forEach(doc => { if (doc.data().isPinned) pinnedDocs.push(doc); else unpinnedDocs.push(doc); });
+      const sortedDocs = [...pinnedDocs, ...unpinnedDocs];
 
       const existingMap = {};
       Array.from(boardEl.querySelectorAll('.card')).forEach(node => { existingMap[node.dataset.id] = node; });
-
       const fragment = document.createDocumentFragment();
 
-      docs.forEach((doc, idx) => {
-        const id = doc.id;
-        const data = doc.data();
+      sortedDocs.forEach((doc, idx) => {
+        const id = doc.id; const data = doc.data();
 
         if (existingMap[id]) {
           const node = existingMap[id];
           
-          const numEl = node.querySelector('.card-number');
-          if (numEl) numEl.textContent = `#${idx + 1}`;
-
+          // Actualizar UI
+          const numEl = node.querySelector('.card-number'); if (numEl) numEl.textContent = `#${idx + 1}`;
           const footerTime = node.querySelector('.updated-at');
-          if (footerTime && data.updatedAt) {
-            const dt = new Date(data.updatedAt.seconds * 1000);
-            footerTime.innerText = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
-          }
+          if (footerTime && data.updatedAt) { const dt = new Date(data.updatedAt.seconds * 1000); footerTime.innerText = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`; }
+
+          // Actualizar clases dinámicas
+          node.dataset.color = data.color || 'default';
+          data.isCodeMode ? node.classList.add('code-mode') : node.classList.remove('code-mode');
+          data.isPinned ? node.classList.add('is-pinned') : node.classList.remove('is-pinned');
+          data.isLocked ? node.classList.add('locked') : node.classList.remove('locked');
+          
+          const lockBtn = node.querySelector('.btn-lock'); if (lockBtn) lockBtn.textContent = data.isLocked ? '🔒' : '🔓';
+          node.draggable = !data.isLocked;
+          
+          const titleEl = node.querySelector('.card-title'); const mainEl = node.querySelector('.card-content'); const extraEl = node.querySelector('.card-extra');
+          if (titleEl) titleEl.contentEditable = !data.isLocked;
+          if (mainEl) mainEl.contentEditable = !data.isLocked;
+          if (extraEl) extraEl.contentEditable = !data.isLocked;
 
           if (node.dataset.uploading !== "true") {
-            const btnUpload = node.querySelector('.btn-upload');
-            const fileLinkContainer = node.querySelector('.file-link-container');
-            
+            const btnUpload = node.querySelector('.btn-upload'); const fileLinkContainer = node.querySelector('.file-link-container');
             if (data.fileUrl) {
               if (btnUpload) btnUpload.style.display = 'none';
-              if (fileLinkContainer && !fileLinkContainer.innerHTML.includes(data.fileUrl)) {
-                fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" download="${data.fileName || 'archivo'}" class="small-btn btn-download">⬇️ Descargar ${data.fileName || ''}</a>`;
-              }
+              if (fileLinkContainer && !fileLinkContainer.innerHTML.includes(data.fileUrl)) fileLinkContainer.innerHTML = `<a href="${data.fileUrl}" download="${data.fileName || 'archivo'}" class="btn-download">⬇️ Descargar ${data.fileName || ''}</a>`;
             } else {
               if (btnUpload) btnUpload.style.display = 'block';
               if (fileLinkContainer) fileLinkContainer.innerHTML = '';
             }
           }
 
-          const titleEl = node.querySelector('.card-title');
-          const mainEl = node.querySelector('.card-content');
-          const extraEl = node.querySelector('.card-extra');
-
-          // Solo aplica la actualización si el usuario NO está editando ese cuadro
-          if (document.activeElement !== titleEl && titleEl.innerText !== (data.title || '')) {
-            titleEl.textContent = data.title || '';
-          }
-          if (document.activeElement !== mainEl) {
-            const currentRaw = mainEl.innerText;
-            const newRaw = data.text || '';
-            if (currentRaw !== newRaw) mainEl.innerHTML = linkify(newRaw);
-          }
-          if (document.activeElement !== extraEl) {
-             const currentRaw = extraEl.innerText;
-             const newRaw = data.extra || '';
-             if (currentRaw !== newRaw) extraEl.innerHTML = linkify(newRaw);
-          }
+          if (document.activeElement !== titleEl && titleEl.innerText !== (data.title || '')) titleEl.textContent = data.title || '';
+          if (document.activeElement !== mainEl && mainEl.innerText !== (data.text || '')) mainEl.innerHTML = linkify(data.text);
+          if (document.activeElement !== extraEl && extraEl.innerText !== (data.extra || '')) extraEl.innerHTML = linkify(data.extra);
 
           fragment.appendChild(node);
         } else {
@@ -537,32 +589,25 @@
         }
       });
 
-      // Asegurar que el placeholder siga existiendo si estamos a mitad de un arrastre durante una sincronización externa
-      if (window.draggingNode && window.dragPlaceholder.parentNode) {
-         boardEl.insertBefore(window.dragPlaceholder, window.dragPlaceholder.nextSibling);
-      }
-
-      boardEl.innerHTML = '';
-      boardEl.appendChild(fragment);
+      if (window.draggingNode && window.dragPlaceholder.parentNode) boardEl.insertBefore(window.dragPlaceholder, window.dragPlaceholder.nextSibling);
+      boardEl.innerHTML = ''; boardEl.appendChild(fragment);
     });
   }
 
   startRealtime();
 
   /***********************
-   * Controles Principales
+   * Creación y Borrado General
    ***********************/
   addCardBtn.addEventListener('click', async () => {
-    await db.collection('cards').add({
-      title: '', text: '📝 Escribe algo o pega enlaces...', extra: '', position: Date.now(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    await db.collection('cards').add({ title: '', text: '', extra: '', isCodeMode: false, isLocked: false, isPinned: false, color: 'default', position: Date.now(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
   });
 
   clearAllBtn.addEventListener('click', async () => {
-    if (!confirm('¿Eliminar permanentemente todo el contenido?')) return;
+    if (!confirm('¿Eliminar todas las tarjetas? (Las bloqueadas 🔒 se conservarán)')) return;
     const snapshot = await db.collection('cards').get();
     const batch = db.batch();
-    snapshot.forEach(doc => batch.delete(doc.ref));
+    snapshot.forEach(doc => { if (!doc.data().isLocked) batch.delete(doc.ref); });
     await batch.commit();
   });
 
