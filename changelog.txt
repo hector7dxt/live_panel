@@ -1,0 +1,57 @@
+---
+
+### Archivo: `CHANGELOG.md` (Histórico de Releases)
+
+```markdown
+# Histórico de Versiones (Changelog)
+
+## [1.4.1] - Hotfix (Actual)
+### Corregido
+- **Clausura obsoleta (Stale Closure):** Se solucionó un bug lógico donde los botones de las tarjetas (Bloquear, Fijar, Color, Código) dejaban de funcionar tras el primer clic al memorizar el estado inicial de la base de datos. Ahora los eventos leen el estado del DOM en tiempo real, permitiendo alternar funcionalidades de forma bidireccional sin fallos.
+
+## [1.4.0] - Versión "Ultra"
+### Añadido
+- **Modo Código (`</>`):** Funcionalidad para cambiar la tipografía a formato monoespaciado, respetando la indentación de scripts y fragmentos de código.
+- **Etiquetas de Color (🎨):** Sistema de colores (Rojo, Azul, Verde, Amarillo) adaptados al modo claro y oscuro para categorizar visualmente las tarjetas.
+- **Bloqueo de Seguridad (🔒):** Nuevo estado de solo lectura que deshabilita la edición, el borrado y el Drag & Drop para proteger información crítica.
+- **Tarjetas Fijadas (📌):** Opción para anclar tarjetas específicas al inicio del panel, ignorando el orden cronológico o de arrastre.
+- **Modal QR (📱):** Botón global que genera un código QR de la URL actual para acceso rápido desde dispositivos móviles.
+- **Limpieza Automática (⏳):** Interruptor global (con persistencia) que elimina automáticamente de Firestore cualquier tarjeta con más de 24 horas sin modificaciones.
+
+### Modificado
+- **Placeholders Dinámicos:** Se eliminó el texto hardcodeado al crear tarjetas. Ahora nacen con textos fantasma reales (`data-placeholder`) que no interfieren al pegar contenido rápidamente.
+
+## [1.3.0] - Mejoras de UX/UI y "Pro"
+### Añadido
+- **Modo Oscuro (Dark Mode):** Integración de paleta de colores invertida con botón de alternancia e historial en `localStorage`.
+- **Botón Copiar (📋):** Extracción del texto de la tarjeta al portapapeles del sistema operativo con confirmación visual de 1-clic.
+- **Auto-Link (Linkify):** Detección automática de URLs (http/https) en el texto de las tarjetas, convirtiéndolas en hipervínculos funcionales.
+- **Skeleton Loader:** Animación de carga fluida al iniciar la página para mitigar la percepción de demora al conectar con Firebase.
+- **Ghosting Drag & Drop:** Indicador visual (caja punteada) predictivo que muestra dónde caerá exactamente la tarjeta al ser arrastrada.
+
+### Modificado
+- **Descarga Directa:** Se sobreescribió la URL de descarga externa (`/dl/`) y se añadió el atributo `download` para invocar descargas automáticas en la misma pestaña.
+- **Feedback de Guardado:** Añadida etiqueta visual de "⏳ Guardando..." y "✅ Guardado" en la esquina inferior de las tarjetas al editar texto.
+
+## [1.2.0] - Migración Serverless
+### Añadido
+- **API Externa de Almacenamiento (tmpfiles.org):** Integración de subidas mediante `XMLHttpRequest` para solucionar bloqueos de políticas y costos de almacenamiento en Firebase.
+- **Barra de Progreso:** UI de progreso en tiempo real (0% al 100%) durante la carga de archivos grandes.
+- **Cancelación Segura (Abort):** Intercepción de eventos de borrado que permite cancelar subidas en curso para evitar consumo de red innecesario y archivos huérfanos.
+
+### Eliminado
+- **Firebase Storage:** Dependencia eliminada para optimizar el despliegue puramente estático en GitHub Pages sin asociar cuentas de facturación.
+
+## [1.1.0] - Intento de Archivos (Legacy)
+### Añadido
+- Soporte inicial para archivos (máximo 50MB) usando Firebase Storage.
+- Lógica de borrado profundo (eliminación de archivo físico + documento Firestore).
+*Nota: Versión depreciada rápidamente debido a restricciones de cuota y bloqueos de origen cruzado (CORS) del servidor gratuito.*
+
+## [1.0.0] - Lanzamiento Inicial ("Panel Vivo" Base)
+### Añadido
+- Sincronización de texto bidireccional en tiempo real utilizando Firebase Firestore.
+- Estructura de tarjetas con Título, Contenido principal y Notas extra.
+- Drag & Drop básico para reordenamiento de tarjetas basado en cálculos numéricos de posición.
+- Sistema `debounce` (2.5s) para optimizar escrituras en la base de datos.
+- Función masiva de "Borrar todo".
