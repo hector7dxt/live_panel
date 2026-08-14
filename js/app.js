@@ -372,7 +372,13 @@ function createCardNode(cardDoc, indexForNumbering) {
   titleEl.addEventListener('input', (e) => { setStatus('saving'); saveTitle(e.target.innerText.trim()); });
   mainEl.addEventListener('input', (e) => { setStatus('saving'); saveMain(e.target.innerText); });
   extraEl.addEventListener('input', (e) => { setStatus('saving'); saveExtra(e.target.innerText); });
-  [titleEl, mainEl, extraEl].forEach(node => node.addEventListener('mousedown', (e) => e.stopPropagation()));
+  [titleEl, mainEl, extraEl].forEach(node => {
+    node.addEventListener('mousedown', (e) => e.stopPropagation());
+    // Apaga el Drag & Drop al tocar el texto para permitir seleccionarlo
+    node.addEventListener('mouseenter', () => el.draggable = false);
+    // Enciende el Drag & Drop al salir del texto (si la tarjeta no está bloqueada)
+    node.addEventListener('mouseleave', () => el.draggable = !el.classList.contains('locked'));
+  });
 
   /***** Subida de Archivos *****/
   const fileInput = el.querySelector('.file-input'); const progressContainer = el.querySelector('.progress-container'); const progressFill = el.querySelector('.progress-fill'); const progressText = el.querySelector('.progress-text');
