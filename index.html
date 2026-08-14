@@ -3,17 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel Vivo — Privado</title>
-  <!-- Enlace a la hoja de estilos -->
+  <title>Panel Vivo — Pro</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- Overlay de Inicio de Sesión -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
       <h2>Panel Vivo</h2>
-      <p>Accede a tu tablero privado</p>
+      <p>Accede a tu tablero</p>
       <input type="text" id="loginUser" class="login-input" placeholder="Usuario (ej. hector)" />
       <input type="password" id="loginPass" class="login-input" placeholder="Contraseña" />
       <button id="loginBtn" style="width: 100%; margin-top: 10px;">Ingresar al Panel</button>
@@ -21,10 +19,16 @@
     </div>
   </div>
 
-  <!-- Contenedor Principal de la App -->
   <div id="appContainer" class="app-container">
     <header>
       <h1>Panel Vivo <span id="userNameDisplay" style="font-size: 14px; color: var(--muted); font-weight: normal; margin-left: 8px;"></span></h1>
+      
+      <!-- NUEVO: Pestañas de Navegación -->
+      <div class="view-tabs">
+        <button id="tabPrivate" class="tab-btn active">👤 Mi Tablero</button>
+        <button id="tabPublic" class="tab-btn">🌍 Espacio Compartido</button>
+      </div>
+
       <div class="controls">
         <button id="qrBtn" class="icon-btn" title="Mostrar código QR">📱 QR</button>
         <button id="themeToggleBtn" class="icon-btn" title="Cambiar tema">🌙</button>
@@ -41,11 +45,10 @@
         <div class="skeleton-card"></div>
       </div>
       <div id="board" class="board" aria-live="polite" style="display:none;"></div>
-      <div id="emptyMsg" class="empty" style="display:none">Tu panel está vacío. Crea la primera tarjeta.</div>
+      <div id="emptyMsg" class="empty" style="display:none">Este panel está vacío. Crea la primera tarjeta.</div>
     </div>
   </div>
 
-  <!-- Modal para Código QR -->
   <div id="qrModal" class="modal">
     <div class="modal-content">
       <span class="close-modal">&times;</span>
@@ -54,12 +57,10 @@
     </div>
   </div>
 
-  <!-- Firebase Database SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- Archivos JavaScript separados -->
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
 </body>
