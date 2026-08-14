@@ -1,4 +1,4 @@
-# Uniclip (Universal Clip)
+# Uniclip (Universal Clipboard)
 
 Una herramienta web interactiva, ligera y en tiempo real diseñada para solucionar el problema de compartir texto y archivos entre máquinas, equipos o entornos virtuales.
 
