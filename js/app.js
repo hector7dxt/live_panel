@@ -1,3 +1,4 @@
+alert("El archivo app.js sí se está ejecutando!");
 /***********************
  * Navegación por Pestañas
  ***********************/
