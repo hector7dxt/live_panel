@@ -1,0 +1,133 @@
+:root {
+  /* Colores Modo Claro */
+  --bg: #f5f7fb; 
+  --board-bg: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  --text: #222222; 
+  --muted: #777777;
+  --border: #eeeeee;
+  --accent: #667eea; 
+  --accent-hover: #5a67d8;
+  --danger: #e53e3e;
+  --success: #38a169;
+  --warning: #d69e2e;
+  
+  /* Paleta de Tarjetas (Claro) */
+  --c-default: #ffffff;
+  --c-red: #fff1f2;
+  --c-blue: #eff6ff;
+  --c-green: #f0fdf4;
+  --c-yellow: #fefce8;
+}
+
+[data-theme="dark"] {
+  /* Colores Modo Oscuro */
+  --bg: #111827;
+  --board-bg: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --border: #374151;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+
+  /* Paleta de Tarjetas (Oscuro) */
+  --c-default: #1f2937;
+  --c-red: #3f1619;
+  --c-blue: #172554;
+  --c-green: #14532d;
+  --c-yellow: #422006;
+}
+
+* { box-sizing: border-box; }
+body { font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto; background: var(--bg); color: var(--text); margin: 0; padding: 28px; transition: background 0.3s ease, color 0.3s ease; min-height: 100vh; }
+
+/* Login UI */
+.login-overlay { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 2000; align-items: center; justify-content: center; }
+.login-card { background: var(--c-default); padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border); }
+.login-card h2 { margin-top: 0; margin-bottom: 8px; color: var(--text); }
+.login-card p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.login-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.02); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+.login-input:focus { border-color: var(--accent); }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+/* App UI */
+.app-container { display: none; } 
+
+header { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+h1 { font-size: 20px; color: var(--text); margin: 0; }
+
+.controls { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { background: var(--accent); color: #fff; border: 0; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
+button:hover { background: var(--accent-hover); }
+
+.small-btn { background: var(--c-default); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; font-weight: 400; }
+.small-btn:hover { background: var(--border); }
+.icon-btn { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+
+.board-wrap { overflow: auto; padding: 12px; border-radius: 12px; }
+.board { display: flex; gap: 14px; align-items: flex-start; padding: 18px; min-height: 220px; background: var(--board-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: background 0.3s; flex-wrap: wrap; }
+
+/* Tarjetas */
+.card { width: 280px; min-height: 160px; background: var(--c-default); border-radius: 12px; padding: 12px 12px 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 8px; cursor: grab; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s, background 0.3s; }
+.card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.card.dragging { opacity: 0; }
+.card[data-color="red"] { background: var(--c-red); }
+.card[data-color="blue"] { background: var(--c-blue); }
+.card[data-color="green"] { background: var(--c-green); }
+.card[data-color="yellow"] { background: var(--c-yellow); }
+
+.drop-placeholder { width: 280px; min-height: 160px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(102, 126, 234, 0.05); }
+
+.card-header { display: flex; justify-content: space-between; align-items: center; gap: 4px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px; }
+.card-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.card-number { background: rgba(0,0,0,0.05); color: var(--text); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+.pin-icon { display: none; font-size: 14px; }
+.card.is-pinned .pin-icon { display: block; }
+.card.is-pinned { border: 1px solid var(--accent); }
+
+.card-title { font-weight: 600; color: var(--text); font-size: 14px; min-width: 0; outline: none; border: none; background: transparent; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text; }
+.card-title[contenteditable="true"]:focus { box-shadow: 0 0 0 2px rgba(102,126,234,0.3); border-radius: 4px; overflow: visible; white-space: normal; }
+
+.card-actions { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+.small-icon-btn { background: transparent; color: var(--muted); border: 1px solid transparent; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.small-icon-btn:hover { background: rgba(0,0,0,0.05); color: var(--text); }
+.btn-delete:hover { background: rgba(229, 62, 62, 0.1); color: var(--danger); }
+
+.card-content, .card-extra { font-size: 13px; color: var(--text); padding: 8px; border-radius: 8px; border: 1px solid var(--border); outline: none; overflow: auto; cursor: text; white-space: pre-wrap; word-break: break-word; background: rgba(255,255,255,0.02); }
+.card-content { flex: 1; min-height: 80px; }
+.card-extra { min-height: 40px; font-size: 12px; color: var(--muted); }
+.card-content[contenteditable="true"]:focus, .card-extra[contenteditable="true"]:focus { border-color: var(--accent); background: rgba(102, 126, 234, 0.03); }
+
+.card.code-mode .card-content, .card.code-mode .card-extra { font-family: 'Courier New', Courier, monospace; font-size: 12px; background: rgba(0,0,0,0.05); }
+
+[contenteditable]:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; display: block; opacity: 0.6; }
+
+.card.locked [contenteditable] { pointer-events: none; opacity: 0.9; border-color: transparent; }
+.card.locked .hide-on-lock { display: none !important; }
+
+/* Archivos */
+.card-attachment { padding: 4px; }
+.btn-download { display: block; text-align: center; text-decoration: none; width: 100%; margin-bottom: 4px; font-size: 13px; font-weight: 500; background: rgba(56, 161, 105, 0.1); color: var(--success); border-color: rgba(56, 161, 105, 0.3); padding: 6px; border-radius: 6px; }
+.btn-download:hover { background: rgba(56, 161, 105, 0.2); }
+
+.progress-container { display: none; margin-bottom: 8px; }
+.progress-bar { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s ease, background 0.3s ease; }
+.progress-text { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; font-weight: 500; }
+
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 4px; }
+.muted { color: var(--muted); font-size: 11px; }
+.status-badge { font-size: 11px; font-weight: 500; }
+
+.empty { color: var(--muted); padding: 40px; text-align: center; width: 100%; font-size: 14px; }
+
+/* Modal QR */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background-color: var(--c-default); padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
+.close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: var(--muted); }
+#qrImage { border-radius: 8px; margin-top: 10px; max-width: 100%; }
+
+/* Esqueleto Animado */
+@keyframes pulse { 0%, 100% {opacity: 1;} 50% {opacity: 0.4;} }
+.skeleton-card { width: 280px; height: 220px; background: var(--border); border-radius: 12px; animation: pulse 1.5s infinite; }
+
+@media (max-width:700px){.board{padding:12px;gap:10px}.card{width:100%}.skeleton-card{width: 100%;}}
