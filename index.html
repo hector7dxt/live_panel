@@ -8,10 +8,11 @@
 </head>
 <body>
 
+  <!-- Overlay de Inicio de Sesión -->
   <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
       <h2>Panel Vivo</h2>
-      <p>Accede a tu tablero</p>
+      <p>Accede a tu tablero privado</p>
       <input type="text" id="loginUser" class="login-input" placeholder="Usuario (ej. hector)" />
       <input type="password" id="loginPass" class="login-input" placeholder="Contraseña" />
       <button id="loginBtn" style="width: 100%; margin-top: 10px;">Ingresar al Panel</button>
@@ -19,11 +20,12 @@
     </div>
   </div>
 
+  <!-- Contenedor Principal de la App -->
   <div id="appContainer" class="app-container">
     <header>
       <h1>Panel Vivo <span id="userNameDisplay" style="font-size: 14px; color: var(--muted); font-weight: normal; margin-left: 8px;"></span></h1>
       
-      <!-- NUEVO: Pestañas de Navegación -->
+      <!-- Pestañas de Navegación -->
       <div class="view-tabs">
         <button id="tabPrivate" class="tab-btn active">👤 Mi Tablero</button>
         <button id="tabPublic" class="tab-btn">🌍 Espacio Compartido</button>
@@ -49,6 +51,7 @@
     </div>
   </div>
 
+  <!-- Modal para Código QR -->
   <div id="qrModal" class="modal">
     <div class="modal-content">
       <span class="close-modal">&times;</span>
@@ -57,10 +60,12 @@
     </div>
   </div>
 
+  <!-- Firebase Database SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
+  <!-- Archivo JavaScript Principal -->
   <script src="js/app.js"></script>
 </body>
 </html>
