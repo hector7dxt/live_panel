@@ -1,17 +1,17 @@
-# Panel Vivo ⚡
+# Uniclip (Universal Clip)
 
-Una herramienta web interactiva, ligera y en tiempo real diseñada para solucionar el problema de compartir texto y archivos entre máquinas, equipos o entornos de desarrollo. 
+Una herramienta web interactiva, ligera y en tiempo real diseñada para solucionar el problema de compartir texto y archivos entre máquinas, equipos o entornos virtuales.
 
 Esta plataforma *Serverless* funciona como un portapapeles universal en la nube, combinando la privacidad de un tablero personal con la colaboración de un espacio compartido, sin requerir instalaciones complejas.
 
-## 🚀 Características Principales
+## Características Principales
 
-*   **Autenticación y Privacidad:** Acceso seguro mediante usuario y contraseña (gestionado por Firebase Auth).
+*   **Autenticación y Privacidad:** Acceso seguro mediante usuario y contraseña (gestionado por Firebase Auth). (Solicitar Acceso).
 *   **Doble Espacio de Trabajo:**
     *   👤 **Mi Tablero:** Área privada donde solo tú puedes ver y gestionar tus tarjetas.
     *   🌍 **Espacio Compartido:** Área colaborativa en tiempo real para intercambiar datos con todo tu equipo.
 *   **Sincronización Inmediata:** Actualizaciones en milisegundos a través de Firestore.
-*   **Transferencia de Archivos (API Externa):** Sube archivos temporales (Max 50MB) sin consumir bases de datos privadas. Incluye descargas directas de 1-clic.
+*   **Transferencia de Archivos (API Externa):** Sube archivos temporales (Max 100MB y vigencia de 60min) sin consumir bases de datos privadas. Incluye descargas directas de 1-clic.
 *   **Arquitectura Modular y Veloz:** Separación limpia de HTML, CSS y JS, optimizada para aprovechar el caché del navegador y cargar al instante.
 *   **Interfaz y Herramientas (UX/UI):**
     *   🌙 **Modo Oscuro/Claro** persistente.
